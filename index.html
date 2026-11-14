@@ -1,0 +1,1272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Card Table</title>
+<style>
+:root{--ink:#1d2433;--navy:#1f2a44;--gold:#c99a2e;--gold2:#f6e9c6;--paper:#fbf8f1;--line:#ddd5c4;--felt:#1d6b45;--felt2:#17583a;--muted:#6b7280}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink);background:var(--paper);-webkit-tap-highlight-color:transparent}
+button{font:inherit;cursor:pointer}
+header{background:var(--navy);color:#fff;padding:18px 16px 14px;text-align:center}
+header h1{font-family:Georgia,serif;margin:0;font-size:30px}header h1 span{color:var(--gold)}
+header p{margin:6px 0 0;color:#d6dbe6;font-size:14.5px}
+.wrap{max-width:860px;margin:0 auto;padding:12px 14px 40px}
+h2{font-family:Georgia,serif;font-size:20px;margin:20px 0 10px}
+.sub{color:var(--muted);font-size:14px;margin:-4px 0 10px}
+.games{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+@media(max-width:640px){.games{grid-template-columns:repeat(2,1fr)}}
+.gcard{border:2px solid var(--line);background:#fff;border-radius:12px;padding:10px;text-align:left;color:inherit;min-height:70px}
+.gcard b{display:block;font-size:15px}.gcard small{color:var(--muted);font-size:12.5px}
+.gcard.on{border-color:var(--gold);background:var(--gold2)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{border:2px solid var(--navy);background:#fff;color:var(--navy);border-radius:999px;padding:8px 16px;font-weight:600}
+.btn.on,.btn.primary{background:var(--navy);color:#fff}
+.btn.gold{background:var(--gold);border-color:var(--gold);color:#1d2433}
+.btn.sm{padding:5px 12px;font-size:14px}
+.btn:disabled{opacity:.35;cursor:default}
+.desc{font-size:13.5px;color:var(--muted);margin-top:6px}
+.start{margin:22px 0 6px;width:100%;padding:14px;font-size:17px}
+footer{text-align:center;color:var(--muted);font-size:12.5px;padding:10px 16px 30px}
+/* game screen */
+#game{max-width:560px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;background:var(--felt2)}
+.topbar{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--navy);color:#fff}
+.topbar b{flex:1;font-family:Georgia,serif;font-size:17px}
+.topbar .tb{background:none;border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:999px;padding:4px 10px;font-size:13px}
+#speedbar{display:flex;gap:6px;align-items:center;justify-content:center;padding:6px 8px;background:#14472f;flex-wrap:wrap}
+#speedbar button{background:#fff;border:none;border-radius:999px;padding:5px 11px;font-weight:700;font-size:13px;color:#1d2433}
+#speedbar button.on{background:var(--gold)}
+#spLabel{color:#d1fae5;font-size:12.5px;min-width:70px;text-align:center}
+.paused-tag{position:absolute;top:8px;left:50%;transform:translateX(-50%);background:var(--gold);color:#1d2433;font-weight:800;padding:4px 14px;border-radius:999px;z-index:6}
+#gscore{font-size:12.5px;color:#e5e7eb;padding:4px 10px;background:rgba(0,0,0,.18);text-align:center}
+#felt{background:radial-gradient(ellipse at center,#23804f 0%,var(--felt) 70%);display:grid;grid-template-columns:76px 1fr 76px;grid-template-rows:auto 1fr;grid-template-areas:"left top right" "left center right";gap:4px;padding:8px 6px;min-height:330px;color:#fff;position:relative}
+.seat{display:flex;flex-direction:column;align-items:center;gap:3px;position:relative;text-align:center;font-size:12px}
+.s-top{grid-area:top}.s-left{grid-area:left;justify-content:center}.s-right{grid-area:right;justify-content:center}
+.av{width:38px;height:38px;border-radius:50%;background:#f6e9c6;color:#6b4e0f;font-weight:700;display:flex;align-items:center;justify-content:center;border:3px solid transparent;font-size:14px}
+.seat.act .av{border-color:#fde047;box-shadow:0 0 0 3px rgba(253,224,71,.35)}
+.sname{font-weight:700}.sinfo{color:#d1fae5;font-size:11.5px;line-height:1.25}
+.fan{display:flex;justify-content:center}.fan .card{margin-left:-14px}.fan .card:first-child{margin-left:0}
+.ssets{display:flex;flex-wrap:wrap;gap:2px;justify-content:center;max-width:150px}
+.bubble{position:absolute;z-index:5;background:#fff;color:#1d2433;border-radius:12px;padding:6px 10px;font-size:13px;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,.3);white-space:nowrap;max-width:200px;white-space:normal;width:max-content}
+.s-top .bubble{top:100%;left:50%;transform:translateX(-50%);margin-top:4px}
+.s-left .bubble{left:70px;top:10px}.s-right .bubble{right:70px;top:10px}
+#center{grid-area:center;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:200px}
+.pile{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11.5px;color:#d1fae5}
+.piles{display:flex;gap:14px;align-items:flex-end;justify-content:center;flex-wrap:wrap}
+.cinfo{font-size:13px;color:#fff;text-align:center;background:rgba(0,0,0,.2);border-radius:10px;padding:4px 10px}
+#you{background:#fff;border-top:4px solid var(--gold);padding:8px 10px 14px;flex:1}
+#ysets{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px;font-size:12px;color:var(--muted)}
+#yprompt{font-size:15px;font-weight:600;margin:2px 0 4px;min-height:20px}
+#ymsg{font-size:13.5px;color:#6b4e0f;min-height:18px;margin-bottom:4px}
+#yhand{display:flex;justify-content:center;padding:16px 0 6px;min-height:92px}
+#ybtns{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:6px}
+.yb{border:2px solid var(--navy);background:#fff;color:var(--navy);border-radius:10px;padding:8px 12px;font-weight:700;font-size:14.5px;min-width:64px}
+.yb.main{background:var(--navy);color:#fff}
+.yb:disabled{opacity:.3}
+.yb.hint{border-color:var(--gold);color:#6b4e0f}
+/* cards */
+.card{--cw:44px;--ch:62px;width:var(--cw);height:var(--ch);border-radius:6px;background:#fff;border:1px solid #9ca3af;position:relative;color:#111827;font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.3);flex:none;user-select:none;transition:transform .12s}
+.card .tl{position:absolute;top:2px;left:3px;font-size:calc(var(--cw)*.31);line-height:1.02;text-align:center}
+.card .mid{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:calc(var(--cw)*.5);padding-top:calc(var(--ch)*.18)}
+.card.red{color:#c0392b}
+.card.back{background:repeating-linear-gradient(45deg,#1f3b73 0 4px,#2b4f94 4px 8px);border:2px solid #fff}
+.card.hc{--cw:48px;--ch:68px}
+.card.sm{--cw:26px;--ch:36px;border-radius:4px}
+.card.xs{--cw:20px;--ch:28px;border-radius:3px}
+.card.xs .tl{font-size:9px}.card.xs .mid{display:none}
+.card.sm .mid{font-size:12px}
+.card.sel{transform:translateY(-14px);outline:3px solid #f5c542}
+.card.legal{box-shadow:0 0 0 3px #38bdf8}
+.card.dimc{filter:brightness(.72)}
+.card.sugg{outline:3px dashed #16a34a;outline-offset:1px}
+.card.joker .mid{font-size:calc(var(--cw)*.42)}
+.slot{border:2px dashed rgba(255,255,255,.45);border-radius:6px;width:44px;height:62px;flex:none}
+.trick{position:relative;width:170px;height:156px}
+.trick .card{position:absolute}
+.t-bottom{left:63px;bottom:0}.t-top{left:63px;top:0}.t-left{left:6px;top:47px}.t-right{right:6px;top:47px}
+.tap{cursor:pointer}
+.picked{outline:3px solid #fde047;border-radius:6px}
+.target{box-shadow:0 0 0 3px #38bdf8;border-radius:6px}
+#modal{position:fixed;inset:0;background:rgba(15,23,42,.6);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+#modal .box{background:#fff;border-radius:14px;max-width:440px;width:100%;padding:18px;max-height:85vh;overflow:auto;line-height:1.5}
+#modal h3{margin:0 0 8px;font-family:Georgia,serif}
+#mbtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.tbl{border-collapse:collapse;width:100%;font-size:14px;margin-top:6px}.tbl td,.tbl th{border-bottom:1px solid #eee;padding:4px 6px;text-align:left}
+.mini-row{display:flex;gap:3px;flex-wrap:wrap;align-items:center}
+.grp{display:inline-flex;vertical-align:middle;margin:1px 2px;background:#f3f4f6;border-radius:6px;padding:3px;gap:0}.grp .card{margin-left:-12px}.grp .card:first-child{margin-left:0}
+.clab{font-size:11px;color:var(--muted);margin-right:4px}
+.kc{display:grid;grid-template-columns:repeat(3,auto);gap:6px;justify-items:center;align-items:center}
+.kc .pile{min-width:46px}
+.sol{width:100%;max-width:380px}
+.solrow{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.solcol{position:relative;min-height:70px}
+.solcol .card{position:absolute;left:0}
+.sol .card{--cw:min(46px,calc((100vw - 60px)/7));--ch:calc(var(--cw)*1.4)}
+.pyr{display:flex;flex-direction:column;align-items:center}
+.pyr .prow{display:flex;gap:3px;margin-top:-30px}.pyr .prow:first-child{margin-top:0}
+.pyr .card{--cw:40px;--ch:56px}
+.gone{visibility:hidden}
+</style>
+</head>
+<body>
+<div id="menu">
+ <header><h1>The Card <span>Table</span></h1><p>16 classic card games. Computer players who play to your level.</p></header>
+ <div class="wrap">
+  <h2>1. Pick a game</h2>
+  <div class="games" id="games"></div>
+  <div class="desc" id="gdesc"></div>
+  <h2>2. Players</h2>
+  <p class="sub" id="psub">You plus computer players.</p>
+  <div class="row" id="pcount"></div>
+  <h2>3. Skill level</h2>
+  <p class="sub">The computer players match your level.</p>
+  <div class="row" id="levels"></div>
+  <div class="desc" id="ldesc"></div>
+  <div id="styleWrap"><h2>Play style</h2><div class="row" id="styles"></div><div class="desc" id="sdesc"></div></div>
+  <h2>Table talk</h2>
+  <div class="row" id="talks"></div><div class="desc" id="tdesc"></div>
+  <h2>4. Speed</h2>
+  <div class="row" id="speeds"></div>
+  <button class="btn gold start" id="startBtn">Deal me in →</button>
+ </div>
+ <footer>A NuSpark LearnWow tool · Just for fun. No chips, no betting.</footer>
+</div>
+<div id="game" hidden>
+ <div class="topbar"><button class="tb" id="leave">✕ Quit</button><b id="gname"></b><button class="tb" id="rulesBtn">Rules</button></div>
+ <div id="gscore"></div>
+ <div id="speedbar"><button id="spSlow">🐢 Slower</button><button id="spPause">⏸ Pause</button><button id="spFast">🐇 Faster</button><span id="spLabel"></span></div>
+ <div id="felt"><div class="seat s-left" id="seat-left"></div><div class="seat s-top" id="seat-top"></div><div class="seat s-right" id="seat-right"></div><div id="center"></div></div>
+ <div id="you"><div id="ysets"></div><div id="yprompt"></div><div id="ymsg"></div><div id="yhand"></div><div id="ybtns"></div></div>
+</div>
+<div id="modal"><div class="box"><div id="mbody"></div><div id="mbtns"></div></div></div>
+<script>
+/* ---------- helpers ---------- */
+const $=s=>document.querySelector(s);
+const R=n=>Math.floor(Math.random()*n);
+const pick=a=>a[R(a.length)];
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=R(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;};
+const range=n=>[...Array(n).keys()];
+const sum=a=>a.reduce((x,y)=>x+y,0);
+function h(tag,props={},...kids){const e=document.createElement(tag);for(const k in props){if(k==='class')e.className=props[k];else if(k==='html')e.innerHTML=props[k];else if(k.startsWith('on'))e.addEventListener(k.slice(2),props[k]);else e.setAttribute(k,props[k]);}kids.flat(3).forEach(k=>{if(k!=null&&k!==false)e.append(k.nodeType?k:document.createTextNode(k));});return e;}
+const SUITS=['♠','♥','♣','♦'];
+const RL={1:'A',11:'J',12:'Q',13:'K',0:'★'};
+const rl=r=>RL[r]||String(r);
+const rname=r=>({1:'Ace',11:'Jack',12:'Queen',13:'King'})[r]||String(r);
+const plural=r=>rname(r)+(r===6?'es':'s');
+const isRed=c=>c.s==='♥'||c.s==='♦';
+const hv=c=>c.r===1?14:c.r;
+const cstr=c=>c.joker?'Joker':rl(c.r)+c.s;
+function makeDeck(o={}){const ranks=o.ranks||[1,2,3,4,5,6,7,8,9,10,11,12,13],out=[];let id=0;
+ for(let k=0;k<(o.copies||1);k++)for(const s of SUITS)for(const r of ranks)out.push({r,s,id:id++});
+ for(let j=0;j<(o.jokers||0);j++)out.push({r:0,s:'★',id:id++,joker:true});
+ return shuffle(out);}
+const OOPS=[0.38,0.12,0.02];
+const oops=lv=>Math.random()<OOPS[lv];
+const AI_NAMES=['Rosa','Walt','June'];
+const PEOPLE=[
+ ['Rosa','🌹','Retired school librarian. Never forgets a card and never stops smiling.'],
+ ['Walt','🎩','Old-school card shark from the corner diner. Plays it cool and rarely bluffs.'],
+ ['June','🌻','Sunny gardener who gets very competitive by the third hand.'],
+ ['Frankie','🎸','Weekend guitarist. Plays fast and talks faster.'],
+ ['Dot','🧶','Knits through every game and still somehow wins.'],
+ ['Marcus','🏀','Former high school coach who lives for a comeback.'],
+ ['Bea','🐝','Busy as a bee and keeps every score in her head.'],
+ ['Sal','🍕','Runs the pizza shop downstairs. Bluffs with a perfectly straight face.'],
+ ['Lou','🎣','Patient, quiet fisherman. Dangerous at Go Fish, for obvious reasons.'],
+ ['Gloria','✨','Bingo-hall legend. Lucky streaks follow her everywhere.'],
+ ['Hank','🤠','Ranch hand with a poker face as flat as Kansas.'],
+ ['Nina','📚','Crossword champ who quietly counts every card.'],
+ ['Otis','🎷','Jazz man. Plays by feel and is never in a hurry.'],
+ ['Pearl','🥧','Grandmother of nine. Sweet as pie and ruthless at Hearts.'],
+ ['Ray','☀️','Eternal optimist who thinks every hand is a winner.'],
+ ['Tess','🐾','Dog walker who always has a treat and a trick up her sleeve.'],
+ ['Vince','🕶️','Wears sunglasses indoors. Says it helps his game.'],
+ ['Ida','🍪','Bakes cookies for the whole table, then takes every trick.'],
+ ['Gus','🔧','Mechanic who can fix anything, even a losing hand.'],
+ ['Mabel','🎨','Painter who plays with flair and the occasional wild guess.'],
+ ['Benny','🎲','Game-night host who knows every house rule ever invented.'],
+ ['Carmen','💃','Dances when she wins. Dances when she loses, too.'],
+ ['Eddie','📻','Talk-radio fan with an opinion on every card played.'],
+ ['Lena','♟️','Chess player who thinks three moves ahead.']];
+const LEVEL_TAG=['Playing it easy today','Playing a solid, steady game','Playing at full strength'];
+function meetHTML(G){const P=T.players,n=P.length,team=G.min===4&&G.max===4&&['spades','euchre','pinochle','canasta'].includes(T.gid);
+ const row=p=>`<div style="display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid #eee"><div style="width:52px;height:52px;border-radius:50%;background:#f6e9c6;display:flex;align-items:center;justify-content:center;font-size:28px;flex:none">${p.emo}</div><div><b style="font-size:16px">${p.name}</b>${team?(p.i===2?' <span style="color:#16a34a;font-size:13px;font-weight:700">· your partner</span>':' <span style="color:#c0392b;font-size:13px;font-weight:700">· opponent</span>'):''}<div style="font-size:14px;color:#4b5563">${p.bio}</div></div></div>`;
+ return `<h3>Meet your ${team?'table':n===2?'opponent':'opponents'}</h3>${P.slice(1).map(row).join('')}<p style="font-size:13px;color:#6b7280;margin-bottom:0">${LEVEL_TAG[T.level]} (${LEVELS[T.level][0]} level).</p>`;}
+const cardsHTML=(cs,cls='xs')=>cs.map(c=>cardEl(c,{cls}).outerHTML).join('');
+
+/* ---------- card element ---------- */
+function cardEl(c,o={}){const e=document.createElement('div');
+ if(!c||o.back){e.className='card back'+(o.cls?' '+o.cls:'');return e;}
+ e.className='card'+(isRed(c)?' red':'')+(c.joker?' joker':'')+(o.cls?' '+o.cls:'');
+ if(c.joker){e.innerHTML='<span class="tl">★</span><span class="mid">JKR</span>';return e;}
+ e.innerHTML=`<span class="tl">${rl(c.r)}<br>${c.s}</span><span class="mid">${c.s}</span>`;return e;}
+
+/* ---------- table engine ---------- */
+const ABORT={abort:true};
+const T={step:0,paused:false,resumers:[],token:0,players:[],level:1,fast:false,auto:false,pending:null,active:-1,bubbles:{},msg:'',sel:[],sugg:new Set(),G:null,n:2,modalRes:null};
+function chk(tok){if(tok!==T.token)throw ABORT;}
+T.factor=()=>(T.fast?0.6:1.4)*Math.pow(1.4,-T.step);
+T.untilResumed=()=>T.paused?new Promise(r=>T.resumers.push(r)):Promise.resolve();
+T.wait=ms=>{const tok=T.token;if(T.auto)return Promise.resolve().then(()=>chk(tok));return T.untilResumed().then(()=>new Promise(r=>setTimeout(r,ms*T.factor()))).then(()=>T.untilResumed()).then(()=>chk(tok));};
+function speedUI(){const lab=T.step===0?'Normal speed':T.step<0?`Slower ×${-T.step}`:`Faster ×${T.step}`;$('#spLabel').textContent=T.paused?'Paused':lab;$('#spPause').textContent=T.paused?'▶ Continue':'⏸ Pause';$('#spPause').classList.toggle('on',T.paused);
+ const f=$('#felt');let tag=f.querySelector('.paused-tag');if(T.paused&&!tag)f.append(h('div',{class:'paused-tag'},'Paused'));if(!T.paused&&tag)tag.remove();}
+function setPaused(v){T.paused=v;if(!v){const rs=T.resumers;T.resumers=[];rs.forEach(r=>r());}speedUI();}
+$('#spSlow').onclick=()=>{T.step=Math.max(-5,T.step-1);speedUI();};
+$('#spFast').onclick=()=>{T.step=Math.min(5,T.step+1);speedUI();};
+$('#spPause').onclick=()=>setPaused(!T.paused);
+T.say=(i,text,ms=1700,ctx)=>{if(T.auto)return text;if(T.chatty&&i!==0)text=flavor(i,text,ctx||{});const b={text};T.bubbles[i]=b;T.render();setTimeout(()=>{if(T.bubbles[i]===b){delete T.bubbles[i];T.render();}},ms*Math.max(1,T.factor()));return text;};
+T.note=t=>{T.msg=t;if(!T.auto)T.render();};
+T.ask=o=>{const tok=T.token;
+ if(T.auto){const a=(o.auto||o.suggest)();return Promise.resolve().then(()=>{chk(tok);return{v:a.v,cards:a.cards||[]};});}
+ return new Promise((res,rej)=>{T.sel=[];T.sugg=new Set();T.pending={...o,res,rej};T.render();}).then(r=>{chk(tok);return r;});};
+T.resolve=v=>{const p=T.pending;if(!p)return;T.pending=null;const cards=T.sel.slice();T.sel=[];T.sugg=new Set();T.msg='';p.res({v,cards});T.render();};
+T.modal=(html,buttons=[{label:'Continue',v:1}])=>{const tok=T.token;
+ if(T.auto)return Promise.resolve().then(()=>{chk(tok);return buttons[0].v;});
+ return new Promise(res=>{$('#mbody').innerHTML=html;const mb=$('#mbtns');mb.innerHTML='';
+  buttons.forEach((b,i)=>mb.append(h('button',{class:'btn'+(i===0?' primary':''),onclick:()=>{$('#modal').style.display='none';T.modalRes=null;res(b.v);}},b.label)));
+  $('#modal').style.display='flex';T.modalRes=res;}).then(v=>{chk(tok);return v;});};
+T.info=(html)=>{$('#mbody').innerHTML=html;const mb=$('#mbtns');mb.innerHTML='';mb.append(h('button',{class:'btn primary',onclick:()=>{$('#modal').style.display='none';}},'Close'));$('#modal').style.display='flex';};
+function seatPos(i,n){if(i===0)return 'bottom';if(n===2)return 'top';if(n===3)return i===1?'left':'right';return ['bottom','left','top','right'][i];}
+T.partner=i=>(i+2)%4;
+const TALK=[
+ [/^(.+), got any (.+)\?$/,['Hey $1, any $2 hiding in there?','$1… I\'m feeling lucky. Got any $2?','Be honest, $1. Any $2?','$1, hand over your $2. If you have any!','Okay $1, $2. Let\'s see it.']],
+ [/^Go fish!$/,['Sorry {to}, you gotta fish!','Nope! Go fish, {to}.','Not a one. Splash! Go fish!','Ha! Go fish, {to}.','Nothing here, {to}. Into the pond!']],
+ [/^Yes, (.+)\.$/,['Ugh, fine. Here you go, {to}.','You got me, {to}. Take $1.','How did you know?! Here.','Darn it, {to}. Here, take $1.']],
+ [/^Book of (.+)!$/,['Book! All four $1, thank you very much.','Four $1! Down they go.','That\'s a book of $1. Who\'s counting?','Look at that, a book of $1!']],
+ [/^Got my (.+)!$/,['Ha! Fished my $1!','Right out of the pond. My $1!','Would you look at that. $1!']],
+ [/^Draws a card$/,['Let\'s see what I get…','One for me.','Come on, good card…','Drawing!']],
+ [/^Draws 2$/,['Two for me, please.','Let\'s see these two…']],
+ [/^Plays (.+)$/,['$1. Your move!','Here\'s a $1.','How about a $1?','$1, boom.']],
+ [/^Eight! New suit: (.+)$/,['Crazy eight! Let\'s go $1.','Wild card! Make it $1.','Eight! Everybody switch to $1.']],
+ [/^Last card!$/,['One card left. Watch out!','Last card! Getting nervous?','Uh oh… last card!']],
+ [/^Pass$/,['Nothing for me. Pass.','I\'ll pass.','Not this time. Pass.','Pass. Don\'t look at me like that.']],
+ [/^I doubt it!$/,['No way. I doubt it!','Ha! I doubt that!','Really? I doubt it!','Not buying it. I doubt it!']],
+ [/^Busted!$/,['Gotcha!','Caught you!','I knew it!','Busted! Nice try.']],
+ [/^Oops…$/,['Hmm, they were real. Oops.','Okay, okay, you were honest.','Well, that backfired.']],
+ [/^Ouch, \+(\d+)$/,['Ugh, $1 points. Thanks a lot.','Ouch! $1 for me.','Great. Just great. +$1.','Who gave me those? +$1.']],
+ [/^I bid (\d+)$/,['I\'ll go $1.','Put me down for $1.','$1. Feeling good about it.','Hmm… $1.']],
+ [/^Order it up$/,['Order it up!','I like it. Order it up.']],
+ [/^I'll pick it up$/,['I\'ll take that one, thanks!','Picking it up!']],
+ [/^Fold$/,['I\'m out.','Too rich for me.','Fold. Next hand is mine.','Nope. I fold.']],
+ [/^Check$/,['Check.','I\'ll check.','Check. Your move.','Knock knock. Check.']],
+ [/^Call (\d+)$/,['I\'ll call.','I\'m in. Call $1.','Call. Let\'s see it.','Sure, $1. I call.']],
+ [/^(Bet|Raise) to (\d+)$/,['Let\'s make it $2.','$1 to $2. Keep up!','I\'m feeling it. $2.','Raise! Make it $2.']],
+ [/^All in! \((\d+)\)$/,['All in! Let\'s do this.','Everything I\'ve got. All in!','All in. Go big or go home!']],
+ [/^I'll take (\d+)$/,['Give me $1.','$1 cards, please.','I\'ll take $1. Fingers crossed.']],
+ [/^I'm good$/,['I\'ll play these.','No cards for me. I\'m good.','Pat. I like what I\'ve got.']],
+ [/^Hit$/,['Hit me.','One more.','Hit. Come on, small card…','Give me another.']],
+ [/^Stand$/,['I\'ll stay.','Stand. I like this.','That\'s enough for me.']],
+ [/^Bust!$/,['Ugh, bust.','Too many! Bust.','Busted. Oh well.']],
+ [/^War!$/,['WAR!','Here we go… WAR!','This means war!']],
+ [/^A pair!$/,['Pair! Bye bye.','A match!','Two of a kind. Out they go!']],
+ [/^I'm out!$/,['I\'m out! Good luck, everybody.','Out! Don\'t get stuck with her.','Free! I\'m out.']],
+ [/^Takes a card from (.+)$/,['Let me pick one, $1…','Hmm, this one, $1.','Eeny, meeny… this one!']],
+ [/^Shuffling and dealing…$/,['Shuffle up and deal!','Cards coming your way.','Let me shuffle these up…','Deal \'em!']],
+ [/^Draws from the deck$/,['From the deck for me.','I\'ll take a fresh one.']],
+ [/^Takes the (.+)$/,['Ooh, I\'ll take that $1!','Thanks for the $1!']],
+ [/^Discards (.+)$/,['Don\'t need the $1.','$1 goes.','Here\'s a $1 for somebody.']],
+ [/^Takes the pile!$/,['I\'ll take that whole pile, thanks!','Pile\'s mine!']],
+ [/^Swaps (\d+)$/,['Swapping $1.']]];
+function flavor(i,text,ctx){if(Math.random()<.25)return text;for(const [re,arr] of TALK){const m=text.match(re);if(m){return pick(arr).replace(/\$(\d)/g,(_,k)=>m[k]||'').replace(/\{to\}/g,ctx.to||'friend');}}return text;}
+T.dealer=-1;
+T.dealPrompt=async(di,label='Shuffle and deal')=>{T.dealer=di;const p=T.players[di];T.active=di;T.render();
+ if(p.human){await T.ask({prompt:'You\'re the dealer this hand.',buttons:[{label:'🔀 '+label,v:1}],auto:()=>({v:1})});T.say(0,'Dealing!',1200);}
+ else{T.say(di,'Shuffling and dealing…',1400);await T.wait(1100);}T.active=-1;T.render();};
+
+T.render=()=>{if(T.auto||!T.G)return;try{renderInner();}catch(e){console.warn('render',e);}};
+function renderInner(){const G=T.G,P=T.players,n=P.length;
+ ['left','top','right'].forEach(pos=>{const el=$('#seat-'+pos);el.innerHTML='';el.style.visibility='hidden';});
+ P.forEach((p,i)=>{if(i===0||p.hidden)return;const pos=seatPos(i,n),el=$('#seat-'+pos);el.style.visibility='visible';el.className='seat s-'+pos+(T.active===i?' act':'');
+  el.append(h('div',{class:'av',style:p.emo?'font-size:22px':''},p.emo||p.name.slice(0,2)),h('div',{class:'sname'},p.name+(T.dealer===i?' 🂠':'')));
+  const info=!T.started?'':G.seatInfo?G.seatInfo(p):`${p.hand.length} cards`;if(info)el.append(h('div',{class:'sinfo',html:info}));
+  if(!G.noFan){const fan=h('div',{class:'fan'});if(p.reveal)p.hand.forEach(c=>fan.append(cardEl(c,{cls:'sm'})));else range(Math.min(p.hand.length,7)).forEach(()=>fan.append(cardEl(null,{cls:'xs'})));el.append(fan);}
+  if(T.started&&G.seatSets){const s=G.seatSets(p);if(s)el.append(h('div',{class:'ssets',html:s}));}
+  if(T.bubbles[i])el.append(h('div',{class:'bubble'},T.bubbles[i].text));});
+ const ce=$('#center');ce.innerHTML='';speedUI();if(!T.started){['#gscore','#ysets','#yprompt','#ymsg','#yhand','#ybtns'].forEach(x=>$(x).innerHTML='');return;}if(G.center)G.center(ce);
+ if(T.bubbles[0])ce.append(h('div',{class:'bubble',style:'position:static;margin-top:4px'},'You: '+T.bubbles[0].text));
+ $('#gscore').innerHTML=G.scoreText?G.scoreText():'';
+ $('#ysets').innerHTML=(T.dealer===0?'<span style="background:#f6e9c6;color:#6b4e0f;border-radius:999px;padding:2px 8px;font-weight:700">🂠 You deal</span>':'')+(G.youSets?G.youSets():'');
+ const pd=T.pending;
+ $('#yprompt').textContent=pd?pd.prompt||'':(T.active>0?`${P[T.active].name} is thinking…`:'');
+ $('#ymsg').innerHTML=T.msg||(G.youInfo?G.youInfo():'');
+ const hand=$('#yhand');hand.innerHTML='';
+ if(!G.hideHand){const me=P[0];const cs=G.sortHand?G.sortHand(me.hand.slice()):defaultSort(me.hand.slice());
+  const w=Math.min(hand.clientWidth||340,540),cw=48,ov=cs.length>1?Math.min(4,(w-cw*cs.length)/(cs.length-1)):0;
+  cs.forEach((c,k)=>{const sel=T.sel.some(x=>x.id===c.id),ok=pd&&pd.cards&&pd.cards(c);
+   const e=cardEl(c,{cls:'hc'+(sel?' sel':'')+(ok&&T.level===0&&!sel?' legal':'')+(pd&&pd.cards&&!ok?' dimc':'')+(T.sugg.has(c.id)?' sugg':'')});
+   e.dataset.id=c.id;if(k)e.style.marginLeft=ov+'px';
+   if(ok)e.onclick=()=>handTap(c);hand.append(e);});}
+ const bb=$('#ybtns');bb.innerHTML='';
+ if(pd){(pd.buttons||[]).forEach((b,i)=>{const en=!b.ok||b.ok(T.sel);bb.append(h('button',{class:'yb'+(i===0&&pd.buttons.length<=3&&!pd.noMain?' main':''),onclick:()=>{if(en)T.resolve(b.v);},...(en?{}:{disabled:'disabled'}),html:b.label}));});
+  if(pd.suggest)bb.append(h('button',{class:'yb hint',onclick:showHint},'💡 Hint'));}
+}
+function defaultSort(cs){return cs.sort((a,b)=>(SUITS.indexOf(a.s)-SUITS.indexOf(b.s))||(hv(a)-hv(b)));}
+function handTap(c){const pd=T.pending;if(!pd)return;const max=pd.max??1,i=T.sel.findIndex(x=>x.id===c.id);
+ if(i>=0){if(max===1&&pd.quick){T.resolve(pd.quick);return;}T.sel.splice(i,1);}
+ else{if(max===1)T.sel=[c];else if(T.sel.length<max)T.sel.push(c);}
+ if(pd.onSel)pd.onSel(T.sel);T.render();}
+function showHint(){const pd=T.pending;if(!pd||!pd.suggest)return;const s=pd.suggest();T.sugg=new Set((s.cards||[]).map(c=>c.id));T.msg='💡 '+(s.text||'Try that.');T.render();}
+T.over=async(html)=>{T.active=-1;T.render();const v=await T.modal(html,[{label:'Play again',v:'again'},{label:'Choose another game',v:'menu'}]);if(v==='again')startGame(T.gid,T.n,T.level);else showMenu();};
+
+/* ---------- menu & start ---------- */
+const GAMES={};
+let MENU={gid:null,n:null,level:1,fast:false,style:'casual',talk:'straight'};
+function showMenu(){T.token++;setPaused(false);if(T.pending)T.pending=null;$('#modal').style.display='none';$('#game').hidden=true;$('#menu').hidden=false;renderMenu();window.scrollTo(0,0);}
+function startGame(gid,n,level){T.started=false;T.token++;setPaused(false);T.dealer=-1;T.pending=null;T.bubbles={};T.msg='';T.sel=[];T.sugg=new Set();T.active=-1;T.gid=gid;T.n=n;T.level=level;
+ const G=GAMES[gid];T.G=G;G.state={};
+ const crew=shuffle(PEOPLE).slice(0,Math.max(0,n-1));
+ T.players=range(n).map(i=>i?({i,name:crew[i-1][0],emo:crew[i-1][1],bio:crew[i-1][2],hand:[],human:false,score:0}):({i,name:'You',hand:[],human:true,score:0}));
+ $('#menu').hidden=true;$('#game').hidden=false;$('#gname').textContent=G.name;window.scrollTo(0,0);
+  T.render();const tok=T.token;
+ (async()=>{if(n>1&&!T.auto)await T.modal(meetHTML(G),[{label:"Let's play!",v:1}]);
+  if(level===0&&!T.auto)await T.modal(`<h3>How to play ${G.name}</h3>${G.rules}<p style="color:#6b7280;font-size:13px">You can open these rules anytime with the Rules button.</p>`,[{label:"Got it, deal me in",v:1}]);
+  chk(tok);T.started=true;await G.play(T);})().catch(e=>{if(e!==ABORT){console.error(e);if(!T.auto)T.modal('<h3>Oops</h3>Something went wrong with this deal. Let\'s start a fresh one.',[{label:'New game',v:1}]).then(()=>startGame(gid,n,level)).catch(()=>{});else throw e;}});}
+const ORDER=['spades','euchre','pinochle','canasta','hearts','gin','cribbage','crazy8','gofish','oldmaid','war','doubt','kings','poker','blackjack','solitaire'];
+const LEVELS=[['Beginner','Computer players forget a lot and make mistakes. Legal cards light up, and hints are always there.'],['Intermediate','Solid computer players who remember the key cards and make the odd mistake.'],['Advanced','Sharp computer players who track every card, set traps and rarely slip.']];
+function renderMenu(){const g=$('#games');g.innerHTML='';
+ ORDER.forEach(id=>{const G=GAMES[id];const b=h('button',{class:'gcard'+(MENU.gid===id?' on':''),onclick:()=>{MENU.gid=id;if(!MENU.n||MENU.n<G.min||MENU.n>G.max)MENU.n=G.def||G.max;renderMenu();}},h('b',{},G.name),h('small',{},G.tag));g.append(b);});
+ const G=MENU.gid&&GAMES[MENU.gid];$('#gdesc').textContent=G?G.blurb:'Tap a game to see what it is.';
+ const pc=$('#pcount');pc.innerHTML='';
+ if(G){if(G.min===G.max){pc.append(h('span',{class:'desc',style:'margin:0'},G.playersText||`${G.min} players`));}
+  else for(let k=G.min;k<=G.max;k++)pc.append(h('button',{class:'btn sm'+(MENU.n===k?' on':''),onclick:()=>{MENU.n=k;renderMenu();}},k===1?'Just me':`${k} players`));
+  $('#psub').textContent=G.playersNote||'You plus computer players.';}
+ const lv=$('#levels');lv.innerHTML='';LEVELS.forEach(([lab],i)=>lv.append(h('button',{class:'btn sm'+(MENU.level===i?' on':''),onclick:()=>{MENU.level=i;renderMenu();}},lab)));
+ $('#ldesc').textContent=LEVELS[MENU.level][1];
+ const sw=$('#styleWrap');sw.hidden=!(G&&G.styles);if(G&&G.styles){const st=$('#styles');st.innerHTML='';[['casual','🏠 Casual play'],['casino','🎰 Casino play']].forEach(([k,lab])=>st.append(h('button',{class:'btn sm'+(MENU.style===k?' on':''),onclick:()=>{MENU.style=k;renderMenu();}},lab)));$('#sdesc').textContent=G.styles[MENU.style];}
+ const tk=$('#talks');tk.innerHTML='';[['straight','💬 Straight'],['personality','😄 Personality']].forEach(([k,lab])=>tk.append(h('button',{class:'btn sm'+(MENU.talk===k?' on':''),onclick:()=>{MENU.talk=k;renderMenu();}},lab)));$('#tdesc').textContent=MENU.talk==='straight'?'Computer players keep it short: "Go fish." "Pass." "Hit."':'Computer players chat and tease: "Sorry Walt, you gotta fish!" "Too rich for me, I\'m out."';
+ const sp=$('#speeds');sp.innerHTML='';[['Relaxed',false],['Quick',true]].forEach(([lab,f])=>sp.append(h('button',{class:'btn sm'+(MENU.fast===f?' on':''),onclick:()=>{MENU.fast=f;renderMenu();}},lab)));}
+$('#startBtn').onclick=()=>{if(!MENU.gid){$('#gdesc').textContent='Pick a game first.';return;}T.fast=MENU.fast;T.style=MENU.style;T.chatty=MENU.talk==='personality';startGame(MENU.gid,MENU.n,MENU.level);};
+$('#leave').onclick=()=>{$('#mbody').innerHTML='<h3>Quit this game?</h3><p>You\'ll go back to the main screen, and this game won\'t be saved.</p>';const mb=$('#mbtns');mb.innerHTML='';
+ mb.append(h('button',{class:'btn primary',onclick:()=>showMenu()},'Quit game'),h('button',{class:'btn',onclick:()=>{$('#modal').style.display='none';}},'Keep playing'));$('#modal').style.display='flex';};
+$('#rulesBtn').onclick=()=>{if(T.G)T.info(`<h3>How to play ${T.G.name}</h3>${T.G.rules}`);};
+window.addEventListener('resize',()=>T.render());
+
+/* ---------- shared bits ---------- */
+async function humanPlay(T,p,legal,aiFn,prompt){
+ if(p.human){const ids=new Set(legal.map(c=>c.id));
+  const r=await T.ask({prompt,cards:c=>ids.has(c.id),max:1,quick:'play',buttons:[{label:'Play',v:'play',ok:s=>s.length===1}],suggest:()=>{const c=aiFn(2);return{v:'play',cards:[c],text:`Play the ${cstr(c)}.`};},auto:()=>({v:'play',cards:[aiFn(2)]})});
+  return r.cards[0];}
+ await T.wait(700);return aiFn(T.level);}
+function trickView(trick,n){const el=h('div',{class:'trick'});trick.forEach(({p,c})=>{const e=cardEl(c);e.classList.add('t-'+seatPos(p,n));el.append(e);});return el;}
+function scoreTable(rows){return `<table class="tbl">${rows.map((r,i)=>`<tr>${r.map(x=>i?`<td>${x}</td>`:`<th>${x}</th>`).join('')}</tr>`).join('')}</table>`;}
+const teamName=t=>t===0?`You & ${T.players[2]?T.players[2].name:'partner'}`:`${T.players[1]?T.players[1].name:''} & ${T.players[3]?T.players[3].name:''}`;
+
+/* ===================== WAR ===================== */
+GAMES.war={name:'War',tag:'Flip and win',min:2,max:2,playersText:'2 players: you vs. one computer player',
+ blurb:'The classic luck game. Both players flip their top card, and the higher card takes both. Ties mean war!',
+ rules:'<p>The deck is split between you. Each round, both players flip their top card. The higher card wins both (aces are high).</p><p><b>War:</b> if the cards tie, each player lays 3 cards face down and 1 face up. The higher face-up card wins everything.</p><p>Win all the cards, or have the most cards after 150 flips. Tip: War is pure luck, so the skill level doesn\'t change anything here.</p>',
+ hideHand:true,noFan:true,
+ seatInfo:p=>`${p.hand.length} cards`,
+ youInfo(){return `Your deck: <b>${T.players[0].hand.length}</b> cards`;},
+ center(el){const s=this.state;el.append(h('div',{class:'piles'},
+  h('div',{class:'pile'},s.up&&s.up[1]?cardEl(s.up[1]):h('div',{class:'slot'}),T.players[1].name),
+  h('div',{class:'pile'},s.up&&s.up[0]?cardEl(s.up[0]):h('div',{class:'slot'}),'You')));
+  if(s.pot)el.append(h('div',{class:'cinfo'},`${s.pot} cards in the middle`));if(s.msg)el.append(h('div',{class:'cinfo'},s.msg));},
+ scoreText(){return `Flip ${this.state.round||0} of 150`;},
+ async play(T){const G=this,s=G.state,[me,op]=T.players;await T.dealPrompt(R(2));const d=makeDeck();me.hand=d.slice(0,26);op.hand=d.slice(26);s.round=0;let autoLeft=0;
+  while(me.hand.length&&op.hand.length&&s.round<150){
+   if(!autoLeft){const r=await T.ask({prompt:'Flip your top card.',buttons:[{label:'Flip',v:1},{label:'Auto-flip 10',v:10}],auto:()=>({v:10})});autoLeft=r.v;}
+   autoLeft--;s.round++;let pot=[];s.msg='';
+   while(true){if(!me.hand.length||!op.hand.length){const w=me.hand.length?me:op;w.hand.push(...pot);s.pot=0;break;}const a=me.hand.shift(),b=op.hand.shift();pot.push(a,b);s.up=[a,b];s.pot=pot.length;T.render();await T.wait(autoLeft?260:650);
+    if(hv(a)===hv(b)){s.msg='It\'s a tie!';T.render();if(!autoLeft){await T.ask({prompt:'It\'s a tie! Declare war!',buttons:[{label:'⚔️ War!',v:1}],auto:()=>({v:1})});}T.say(0,'War!');T.say(1,'War!');s.msg='War! 3 cards down, 1 up.';T.render();await T.wait(800);for(let k=0;k<3;k++){if(me.hand.length>1)pot.push(me.hand.shift());if(op.hand.length>1)pot.push(op.hand.shift());}continue;}
+    const w=hv(a)>hv(b)?me:op;w.hand.push(...shuffle(pot));s.msg=w.human?'You win the flip!':`${op.name} wins the flip.`;s.pot=0;break;}
+   T.render();await T.wait(autoLeft?200:500);}
+  const mine=me.hand.length,theirs=op.hand.length;
+  await T.over(`<h3>${mine>theirs?'You win!':mine===theirs?'It\'s a tie!':op.name+' wins'}</h3>You finished with ${mine} cards, ${op.name} with ${theirs}.`);}
+};
+
+/* ===================== GO FISH ===================== */
+GAMES.gofish={name:'Go Fish',tag:'Ask for cards',min:2,max:4,def:4,
+ blurb:'Ask other players for cards to collect sets of four. Most sets wins.',
+ rules:'<p>Everyone gets 7 cards (5 with 3 or more players). On your turn, pick a card in your hand and ask one player for that rank: "Got any 8s?"</p><p>If they have any, they hand them all over and you go again. If not, they say "Go fish!" and you draw a card. If you draw the rank you asked for, you go again.</p><p>Four of a kind makes a <b>book</b>, which goes on the table. When all 13 books are made, the player with the most books wins.</p><p>Tip: remember what other players ask for. If someone asked for Queens, they have one!</p>',
+ seatInfo(p){return `${p.hand.length} cards · ${p.books.length} book${p.books.length===1?'':'s'}`;},
+ seatSets(p){return p.books.map(r=>`<span class="cinfo" style="padding:1px 5px;font-size:11px">${rl(r)}</span>`).join('');},
+ youSets(){const b=T.players[0].books;return b.length?'<span class="clab">Your books:</span>'+b.map(r=>`<b style="color:#1d2433">${rl(r)}s</b>`).join(', '):'';},
+ sortHand:cs=>cs.sort((a,b)=>a.r-b.r||SUITS.indexOf(a.s)-SUITS.indexOf(b.s)),
+ center(el){el.append(h('div',{class:'piles'},h('div',{class:'pile'},this.state.stock.length?cardEl(null):h('div',{class:'slot'}),`Pond: ${this.state.stock.length}`)));},
+ scoreText(){return T.players.map(p=>`${p.name}: ${p.books.length}`).join(' · ');},
+ async play(T){const G=this,s=G.state,P=T.players,n=P.length;const dl=R(n);s.stock=[];P.forEach(p=>{p.hand=[];p.books=[];});await T.dealPrompt(dl);s.stock=makeDeck();const deal=n===2?7:5;
+  P.forEach(p=>{p.hand=s.stock.splice(0,deal);p.books=[];});
+  const mem=P.map(()=>({}));
+  const books=async p=>{const cnt={};p.hand.forEach(c=>cnt[c.r]=(cnt[c.r]||0)+1);for(const r in cnt)if(cnt[r]===4){
+    if(p.human){T.render();await T.ask({prompt:`You have all four ${plural(+r)}!`,buttons:[{label:`📚 Lay down my ${plural(+r)}`,v:1}],auto:()=>({v:1})});}
+    p.hand=p.hand.filter(c=>c.r!=r);p.books.push(+r);T.say(p.i,`Book of ${plural(+r)}!`);T.render();}};
+  const total=()=>sum(P.map(p=>p.books.length));
+  const aiAsk=(p,lv)=>{const others=P.filter(q=>q!==p&&q.hand.length);const forget=[0.75,0.35,0][lv];const ranks=[...new Set(p.hand.map(c=>c.r))];
+   for(const r of shuffle(ranks)){const known=mem[p.i][r];if(known){const t=[...known].find(i=>i!==p.i&&P[i].hand.length);if(t!==undefined&&Math.random()>=forget)return{rank:r,target:t};}}
+   let rank;if(lv===0)rank=pick(ranks);else{const cnt={};p.hand.forEach(c=>cnt[c.r]=(cnt[c.r]||0)+1);rank=ranks.sort((a,b)=>cnt[b]-cnt[a])[0];}
+   const target=lv===2?others.sort((a,b)=>b.hand.length-a.hand.length)[0].i:pick(others).i;return{rank,target};};
+  for(const p of P)await books(p);let cur=(dl+1)%n,guard=0;
+  while(total()<13&&guard++<2000){const p=P[cur];T.active=cur;
+   if(!p.hand.length){if(s.stock.length){p.hand.push(s.stock.pop());await books(p);}else{cur=(cur+1)%n;continue;}}
+   let again=true;
+   while(again&&total()<13&&p.hand.length&&guard++<2000){again=false;
+    const others=P.filter(q=>q!==p&&q.hand.length);
+    if(!others.length){if(s.stock.length){p.hand.push(s.stock.pop());await books(p);again=true;continue;}break;}
+    let rank,target;T.render();
+    if(p.human){const r=await T.ask({prompt:'Tap a card to ask for, then pick who to ask.',cards:()=>true,max:1,buttons:others.map(q=>({label:`Ask ${q.name}`,v:q.i,ok:sl=>sl.length===1})),
+      suggest:()=>{const m=aiAsk(p,2);return{v:m.target,cards:[p.hand.find(c=>c.r===m.rank)],text:`Ask ${P[m.target].name} for ${plural(m.rank)}.`};},auto:()=>{const m=aiAsk(p,2);return{v:m.target,cards:[p.hand.find(c=>c.r===m.rank)]};}});
+     rank=r.cards[0].r;target=P[r.v];}
+    else{await T.wait(800);const m=aiAsk(p,T.level);rank=m.rank;target=P[m.target];}
+    const said=T.say(p.i,(T.chatty&&target.human)?`friend, got any ${plural(rank)}?`:`${target.human?'You':target.name}, got any ${plural(rank)}?`)||'';await T.wait(1000);
+    P.forEach((q,qi)=>{if(!q.human){(mem[qi][rank]=mem[qi][rank]||new Set()).add(p.i);}});
+    const got=target.hand.filter(c=>c.r===rank);
+    if(target.human){T.active=0;T.render();
+     while(true){const r=await T.ask({prompt:T.chatty&&said?`${p.name} says: "${said}"`:`${p.name} asks you: "Got any ${plural(rank)}?"`,noMain:true,buttons:[{label:got.length?`🤝 Here you go`:'🤝 Here you go',v:'give'},{label:'🎣 Go fish!',v:'fish'}],
+       suggest:()=>({text:got.length?`You have ${got.length===1?'one':got.length} ${got.length===1?rname(rank):plural(rank)}. Hand ${got.length===1?'it':'them'} over.`:`You don't have any ${plural(rank)}. Tell ${p.name} to go fish!`}),auto:()=>({v:got.length?'give':'fish'})});
+      if((r.v==='give')===(got.length>0))break;
+      T.note(got.length?`Look again: you have ${got.length===1?(rank===1||rank===8?'an':'a'):got.length} ${got.length===1?rname(rank):plural(rank)}! You have to hand ${got.length===1?'it':'them'} over.`:`You don't have any ${plural(rank)}. Tell ${p.name} to go fish!`);}
+     T.active=cur;}
+    if(got.length){target.hand=target.hand.filter(c=>c.r!==rank);p.hand.push(...got);T.say(target.i,`${target.human?'Here you go':'Yes'}, ${got.length===1?'one':got.length}.`,undefined,{to:p.human?'friend':p.name});
+     P.forEach((q,qi)=>{if(mem[qi][rank])mem[qi][rank].delete(target.i);});await books(p);again=true;}
+    else{T.say(target.i,'Go fish!',undefined,{to:p.human?'friend':p.name});await T.wait(800);
+     if(s.stock.length){if(p.human){await T.ask({prompt:'Go fish! Draw a card from the pond.',buttons:[{label:'🎣 Fish from the pond',v:1}],auto:()=>({v:1})});}
+      const c=s.stock.pop();p.hand.push(c);if(c.r===rank){if(p.human)T.note(`You fished your wish: the ${cstr(c)}! Go again.`);T.say(p.i,`Got my ${rname(rank)}!`);again=true;}else if(p.human)T.note(`You fished the ${cstr(c)}. Your turn is over.`);await books(p);}}
+    T.render();await T.wait(600);}
+   cur=(cur+1)%n;}
+  const best=Math.max(...P.map(p=>p.books.length)),win=P.filter(p=>p.books.length===best);
+  await T.over(`<h3>${win.some(p=>p.human)?(win.length>1?'A tie, you share the win!':'You win!'):win.map(p=>p.name).join(' & ')+' wins'}</h3>${scoreTable([['Player','Books'],...P.map(p=>[p.name,p.books.length])])}`);}
+};
+
+/* ===================== OLD MAID ===================== */
+GAMES.oldmaid={name:'Old Maid',tag:'Don\'t get stuck',min:2,max:4,def:4,
+ blurb:'Match pairs and pass the cards around. Whoever is stuck with the Old Maid at the end loses.',
+ rules:'<p>One Queen is taken out of the deck, so one Queen is left without a partner. That\'s the <b>Old Maid</b>.</p><p>All cards are dealt, and everyone throws out their pairs. On your turn, draw one face-down card from the next player. If it makes a pair, throw the pair out.</p><p>Players drop out as they run out of cards. The last player holding the Old Maid loses.</p><p>Tip: it\'s mostly luck, so just enjoy it!</p>',
+ sortHand:cs=>cs.sort((a,b)=>a.r-b.r),
+ seatInfo:p=>p.out?'Out!':`${p.hand.length} cards`,
+ youInfo(){return T.players[0].out?'You\'re out. Safe!':'';},
+ center(el){const s=this.state;if(s.from!=null){const f=T.players[s.from];el.append(h('div',{class:'cinfo'},`${f.human?'Your':f.name+'\'s'} cards`));const row=h('div',{class:'mini-row',style:'justify-content:center;max-width:300px'});f.hand.forEach((c,k)=>{const e=cardEl(null,{cls:'sm'});if(T.pending&&T.pending.pickFrom){e.classList.add('tap');e.onclick=()=>T.resolve(k);}row.append(e);});el.append(row);}
+  if(s.msg)el.append(h('div',{class:'cinfo'},s.msg));},
+ scoreText(){return 'Pairs thrown out: '+T.players.map(p=>`${p.name} ${p.pairs}`).join(' · ');},
+ async play(T){const G=this,s=G.state,P=T.players,n=P.length;const dl=R(n);P.forEach(p=>{p.hand=[];p.pairs=0;p.out=false;});await T.dealPrompt(dl);const d=makeDeck().filter(c=>!(c.r===12&&c.s==='♣'));
+  P.forEach(p=>{p.hand=[];p.pairs=0;p.out=false;});d.forEach((c,k)=>P[k%n].hand.push(c));
+  const toss=p=>{const by={};p.hand.forEach(c=>(by[c.r]=by[c.r]||[]).push(c));let made=0;p.hand=[];for(const r in by){const g=by[r];while(g.length>=2){g.splice(0,2);made++;}p.hand.push(...g);}p.pairs+=made;p.hand=shuffle(p.hand);return made;};
+  P.forEach(toss);T.render();await T.wait(600);
+  let cur=(dl+1)%n,guard=0;const active=()=>P.filter(p=>p.hand.length);P.forEach(p=>{if(!p.hand.length)p.out=true;});
+  while(active().length>1&&guard++<500){const p=P[cur];if(!p.hand.length){cur=(cur+1)%n;continue;}
+   let fi=(cur+1)%n;while(!P[fi].hand.length||fi===cur)fi=(fi+1)%n;const from=P[fi];s.from=fi;T.active=cur;T.render();
+   let k;if(p.human){const r=await T.ask({prompt:`Pick a card from ${from.name}'s hand (tap one in the middle).`,pickFrom:true,buttons:[],suggest:()=>({text:'It\'s pure luck. Any card is as good as another!'}),auto:()=>({v:R(from.hand.length)})});k=r.v;}
+   else{if(from.human){await T.ask({prompt:`${p.name} wants to draw from your hand. Shuffle and hold out your cards.`,buttons:[{label:'🔀 Shuffle and offer',v:1}],auto:()=>({v:1})});from.hand=shuffle(from.hand);}await T.wait(900);k=R(from.hand.length);}
+   const c=from.hand.splice(k,1)[0];from.hand=shuffle(from.hand);p.hand.push(c);
+   if(p.human)T.note(`You took the ${cstr(c)}.`);else T.say(p.i,`Takes a card from ${from.human?'you':from.name}`);
+   const made=toss(p);if(made&&!p.human)T.say(p.i,'A pair!');
+   [p,from].forEach(q=>{if(!q.hand.length&&!q.out){q.out=true;T.say(q.i,q.human?'I\'m out!':'I\'m out!');}});
+   s.msg='';T.render();await T.wait(700);cur=fi;}
+  s.from=null;const loser=active()[0];
+  await T.over(loser?(loser.human?'<h3>Stuck with the Old Maid!</h3>You\'re holding the last Queen. Better luck next time.':`<h3>You\'re safe!</h3>${loser.name} got stuck with the Old Maid.`):'<h3>Game over</h3>');}
+};
+
+/* ===================== CRAZY EIGHTS ===================== */
+GAMES.crazy8={name:'Crazy Eights',tag:'Match suit or number',min:2,max:4,def:3,
+ blurb:'Match the top card by suit or number. Eights are wild. First to empty their hand wins.',
+ rules:'<p>Play a card that matches the top card of the discard pile by <b>suit</b> or <b>rank</b>. <b>Eights are wild</b>: play one anytime and pick the new suit.</p><p>If you can\'t play, draw cards until you can. If the draw pile runs out, you pass.</p><p>The first player to get rid of all their cards wins.</p><p>Tip: save your 8s for when you\'re stuck, and change the suit to the one you hold the most of.</p>',
+ center(el){const s=this.state;el.append(h('div',{class:'piles'},h('div',{class:'pile'},s.stock.length?cardEl(null):h('div',{class:'slot'}),`Draw: ${s.stock.length}`),h('div',{class:'pile'},cardEl(s.top),'Discard')));
+  el.append(h('div',{class:'cinfo',html:`Suit to match: <b style="font-size:18px">${s.suit}</b>`}));},
+ async play(T){const G=this,s=G.state,P=T.players,n=P.length;const dl=R(n);s.stock=[];s.top=null;s.suit='—';P.forEach(p=>p.hand=[]);await T.dealPrompt(dl);s.stock=makeDeck();const deal=n===2?7:5;P.forEach(p=>p.hand=s.stock.splice(0,deal));
+  let disc=[];do{s.top=s.stock.pop();disc.push(s.top);}while(s.top.r===8);s.suit=s.top.s;
+  const playable=c=>c.r===8||c.s===s.suit||c.r===s.top.r;
+  const refill=()=>{if(!s.stock.length&&disc.length>1){const keep=disc.pop();s.stock=shuffle(disc);disc=[keep];}};
+  const bestSuit=p=>{const cnt={};p.hand.filter(c=>c.r!==8).forEach(c=>cnt[c.s]=(cnt[c.s]||0)+1);return Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a])[0]||pick(SUITS);};
+  const aiPick=(p,lv)=>{const L=p.hand.filter(playable);if(!L.length)return null;if(oops(lv)||lv===0&&Math.random()<.5)return pick(L);
+   const non8=L.filter(c=>c.r!==8);const nextP=P[(p.i+1)%n];
+   if(non8.length){const cnt={};p.hand.forEach(c=>cnt[c.s]=(cnt[c.s]||0)+1);
+    return non8.sort((a,b)=>(cnt[b.s]-cnt[a.s])||((lv===2&&nextP.hand.length<=2)?(b.s!==s.suit)-(a.s!==s.suit):0)||(b.r-a.r))[0];}
+   return L[0];};
+  let cur=(dl+1)%n,guard=0;
+  while(guard++<1500){const p=P[cur];T.active=cur;T.render();let played=null;
+   if(p.human){while(true){refill();const any=p.hand.some(playable);
+     const r=await T.ask({prompt:any?'Play a matching card, or draw.':'No match. Draw a card.',cards:playable,max:1,quick:'play',buttons:[{label:'Play',v:'play',ok:sl=>sl.length===1},...(s.stock.length?[{label:'Draw',v:'draw'}]:[{label:'Pass',v:'pass',ok:()=>!any}])],
+      suggest:()=>{const c=aiPick(p,2);return c?{v:'play',cards:[c],text:`Play the ${cstr(c)}.`}:{v:'draw',text:'Nothing matches. Draw a card.'};},auto:()=>{const c=aiPick(p,2);return c?{v:'play',cards:[c]}:{v:s.stock.length?'draw':'pass'};}});
+     if(r.v==='play'){played=r.cards[0];break;}if(r.v==='pass')break;const c=s.stock.pop();p.hand.push(c);T.note(`You drew the ${cstr(c)}.`);}}
+   else{await T.wait(800);while(true){refill();played=aiPick(p,T.level);if(played||!s.stock.length)break;p.hand.push(s.stock.pop());T.say(p.i,'Draws a card');T.render();await T.wait(450);}if(!played)T.say(p.i,'Pass');}
+   if(played){p.hand=p.hand.filter(c=>c.id!==played.id);disc.push(played);s.top=played;s.suit=played.s;
+    if(played.r===8){let suit;if(p.human){const r=await T.ask({prompt:'Eight is wild! Pick the new suit.',buttons:SUITS.map(x=>({label:`<span style="font-size:20px;color:${x==='♥'||x==='♦'?'#c0392b':'#111'}">${x}</span>`,v:x})),suggest:()=>({text:`Pick ${bestSuit(p)}, the suit you hold the most of.`}),auto:()=>({v:bestSuit(p)})});suit=r.v;}else suit=bestSuit(p);s.suit=suit;T.say(p.i,`Eight! New suit: ${suit}`);}
+    else if(!p.human)T.say(p.i,`Plays ${cstr(played)}`);
+    if(p.hand.length===1){if(p.human){T.render();await T.ask({prompt:'One card left. Let everyone know!',buttons:[{label:'☝️ Last card!',v:1}],auto:()=>({v:1})});}T.say(p.i,'Last card!');}
+    if(!p.hand.length){T.render();await T.wait(600);break;}}
+   T.render();await T.wait(500);cur=(cur+1)%n;}
+  const w=P.find(p=>!p.hand.length);await T.over(w&&w.human?'<h3>You win!</h3>You played your last card first.':`<h3>${w?w.name+' wins':'Game over'}</h3>${w?w.name+' went out first.':''}`);}
+};
+
+/* ===================== I DOUBT IT ===================== */
+GAMES.doubt={name:'I Doubt It',tag:'Bluff and call bluffs',min:3,max:4,def:4,
+ blurb:'Play cards face down and say what they are, truthfully or not. Get caught lying and you take the pile.',
+ rules:'<p>All the cards are dealt. Players take turns playing 1 to 4 cards face down, claiming they\'re the rank that\'s up next: Aces, then 2s, then 3s, all the way to Kings, then around again.</p><p>You can tell the truth or bluff. After each play, <b>anyone</b> at the table can shout <b>"I doubt it!"</b> (whoever calls first gets it) The cards get flipped. If they were a bluff, the bluffer takes the whole pile. If they were honest, the doubter takes it.</p><p>First player to get rid of all their cards (without getting caught) wins.</p><p>Tip: if you hold three 7s, nobody else can honestly play two 7s!</p>',
+ sortHand:cs=>cs.sort((a,b)=>a.r-b.r),
+ center(el){const s=this.state;el.append(h('div',{class:'piles'},h('div',{class:'pile'},s.pile.length?cardEl(null):h('div',{class:'slot'}),`Pile: ${s.pile.length}`)));
+  el.append(h('div',{class:'cinfo',html:`Up next: <b style="font-size:17px">${plural(s.rank)}</b>`}));if(s.last)el.append(h('div',{class:'cinfo'},s.last));if(s.reveal)el.append(h('div',{class:'mini-row'},s.reveal.map(c=>cardEl(c,{cls:'sm'}))));},
+ async play(T){const G=this,s=G.state,P=T.players,n=P.length;s.pile=[];s.rank=1;P.forEach(p=>p.hand=[]);const dl=R(n);await T.dealPrompt(dl);makeDeck().forEach((c,k)=>P[k%n].hand.push(c));
+  const aiPlay=(p,lv)=>{const truth=p.hand.filter(c=>c.r===s.rank);let cards;
+   if(truth.length){cards=truth.slice(0,4);if(lv===2&&cards.length<4&&p.hand.length>cards.length+3&&Math.random()<.25){const extra=p.hand.filter(c=>c.r!==s.rank);if(extra.length)cards.push(pick(extra));}}
+   else{const pool=p.hand.slice();if(lv>=1){const dist=c=>((c.r-s.rank+13)%13);pool.sort((a,b)=>dist(b)-dist(a));cards=[pool[0]];if(lv===2&&p.hand.length>6&&Math.random()<.3&&pool[1])cards.push(pool[1]);}else{cards=[pick(pool)];if(Math.random()<.3&&pool.length>2)cards.push(pool.find(c=>c.id!==cards[0].id));}}
+   return cards;};
+  const aiDoubt=(q,p,cnt,lv)=>{const held=q.hand.filter(c=>c.r===s.rank).length;if(held+cnt>4)return lv>0||Math.random()<.6;
+   if(!p.hand.length)return lv===2||Math.random()<.5;let pr=[.18,.14,.12][lv]+.07*(cnt-1)+.06*held+(lv===2?Math.min(.15,s.pile.length*.008):0);return Math.random()<pr;};
+  let cur=(dl+1)%n,guard=0,winner=null;
+  while(!winner&&guard++<800){const p=P[cur];T.active=cur;s.reveal=null;T.render();let cards;
+   if(p.human){const r=await T.ask({prompt:`Play 1 to 4 cards as ${plural(s.rank)}. Truth or bluff, it\'s up to you!`,cards:()=>true,max:4,buttons:[{label:'Play them',v:'play',ok:sl=>sl.length>=1}],
+     suggest:()=>{const c=aiPlay(p,2);const honest=c.every(x=>x.r===s.rank);return{v:'play',cards:c,text:honest?`Play your ${plural(s.rank)} honestly.`:`You have no ${plural(s.rank)}. Bluff with a card you won\'t need soon.`};},auto:()=>({v:'play',cards:aiPlay(p,2)})});cards=r.cards;}
+   else{await T.wait(900);cards=aiPlay(p,T.level);}
+   p.hand=p.hand.filter(c=>!cards.some(x=>x.id===c.id));s.pile.push(...cards);const cnt=cards.length;
+   s.last=`${p.human?'You':p.name} played ${cnt} ${cnt===1?rname(s.rank):plural(s.rank)}`;T.say(p.i,`${cnt===1?'One':['','','Two','Three','Four'][cnt]} ${cnt===1?rname(s.rank):plural(s.rank)}.`);T.render();await T.wait(900);
+   let doubter=null;
+   // everyone decides at once; the fastest caller wins the race
+   const aiCallers=P.filter(q=>q!==p&&!q.human&&aiDoubt(q,p,cnt,T.level)).map(q=>({q,t:600+Math.random()*1800}));aiCallers.sort((a,b)=>a.t-b.t);
+   const me=P[0];
+   if(!p.human){const held=me.hand.filter(c=>c.r===s.rank).length;const tok=T.token;let aiTimer=null;
+    if(aiCallers.length&&!T.auto)aiTimer=setTimeout(()=>{if(T.token===tok&&T.pending&&T.pending.doubtRace)T.resolve('__ai');},aiCallers[0].t*T.factor());
+    const r=await T.ask({prompt:`${p.name} says ${cnt} ${cnt===1?rname(s.rank):plural(s.rank)}. Anyone can call it, so be quick!`,doubtRace:true,buttons:[{label:'I doubt it!',v:true},{label:'Let it go',v:false}],
+     suggest:()=>({text:held+cnt>4?`You hold ${held} ${plural(s.rank)} yourself, so that claim is impossible. Doubt it!`:p.hand.length===0?`${p.name} is out of cards. If nobody doubts now, they win!`:'Nothing proves a bluff. Letting it go is usually safer.'}),auto:()=>({v:aiDoubt(me,p,cnt,2)})});
+    if(aiTimer)clearTimeout(aiTimer);
+    if(r.v===true)doubter=me;else if(aiCallers.length)doubter=aiCallers[0].q;}
+   else{if(aiCallers.length){await T.wait(aiCallers[0].t*.6);doubter=aiCallers[0].q;}}
+   if(doubter){T.say(doubter.i,'I doubt it!');await T.wait(900);const honest=cards.every(c=>c.r===s.rank);s.reveal=cards;const taker=honest?doubter:p;
+    taker.hand.push(...s.pile);s.pile=[];s.last=honest?`It was true! ${doubter.human?'You take':doubter.name+' takes'} the pile.`:`Caught bluffing! ${p.human?'You take':p.name+' takes'} the pile.`;T.say(taker.i,honest?'Oops…':'Busted!');T.render();await T.wait(1600);}
+   if(!p.hand.length)winner=p;
+   s.rank=s.rank%13+1;cur=(cur+1)%n;}
+  await T.over(winner&&winner.human?'<h3>You win!</h3>You got rid of every card.':`<h3>${winner?winner.name+' wins':'Game over'}</h3>`);}
+};
+
+/* ===================== KINGS IN THE CORNER ===================== */
+GAMES.kings={name:'Kings in the Corner',tag:'Build down by color',min:2,max:4,def:3,
+ blurb:'Build piles down in alternating colors around the table. Kings go in the corners. First to empty their hand wins.',
+ rules:'<p>Four cards start face up on the sides of the table. The four corners are for <b>Kings</b> only.</p><p>On your turn, draw a card, then make as many plays as you like:</p><ul><li>Put a card on a pile if it\'s <b>one lower</b> and the <b>opposite color</b> (a red 6 on a black 7).</li><li>Put a King in an empty corner.</li><li>Put any card in an empty side spot.</li><li>Move a whole side pile onto another pile if its bottom card fits.</li></ul><p>Tap a card in your hand, then tap where it goes. To move a pile, tap the pile first. Tap <b>End turn</b> when you\'re done. First to empty their hand wins.</p>',
+ sortHand:cs=>cs.sort((a,b)=>b.r-a.r||SUITS.indexOf(a.s)-SUITS.indexOf(b.s)),
+ center(el){const s=this.state,pd=T.pending;const box=h('div',{class:'kc'});const order=[7,0,4,3,null,1,6,2,5];
+  order.forEach(k=>{if(k===null){box.append(h('div',{class:'pile'},s.stock.length?cardEl(null,{cls:'sm'}):h('div',{class:'slot'}),`Deck ${s.stock.length}`));return;}
+   const pl=s.piles[k],top=pl[pl.length-1];const e=top?cardEl(top):h('div',{class:'slot'});const wrap=h('div',{class:'pile'},e,pl.length>1?`${pl.length} cards`:(k>=4?'Corner':' '));
+   if(pd&&pd.kings){const can=pd.canTarget(k);if(can){e.classList.add('tap','target');e.onclick=()=>T.resolve({to:k});}else if(pd.canSource(k)){e.classList.add('tap');if(s.srcPile===k)e.classList.add('picked');e.onclick=()=>{s.srcPile=s.srcPile===k?null:k;T.sel=[];T.render();};}}
+   box.append(wrap);});el.append(box);},
+ async play(T){const G=this,s=G.state,P=T.players,n=P.length;const dl=R(n);s.stock=[];s.piles=range(8).map(()=>[]);P.forEach(p=>p.hand=[]);await T.dealPrompt(dl);s.stock=makeDeck();P.forEach(p=>p.hand=s.stock.splice(0,7));s.piles=range(8).map(k=>k<4?[s.stock.pop()]:[]);
+  // a King dealt to a side moves to a corner
+  const fixKings=()=>{for(let k=0;k<4;k++){const pl=s.piles[k];if(pl.length&&pl[0].r===13){const ci=[4,5,6,7].find(c=>!s.piles[c].length);if(ci!==undefined){s.piles[ci]=pl.slice();s.piles[k]=[];}}}};fixKings();
+  const fits=(c,k)=>{const pl=s.piles[k];if(!pl.length)return k<4?true:c.r===13;const t=pl[pl.length-1];return t.r===c.r+1&&isRed(t)!==isRed(c);};
+  const pileFits=(src,k)=>{if(src===k||src>=4)return false;const pl=s.piles[src];if(!pl.length)return false;const b=pl[0];const tg=s.piles[k];if(!tg.length)return k>=4&&b.r===13;const t=tg[tg.length-1];return t.r===b.r+1&&isRed(t)!==isRed(b);};
+  const findMove=(p,lv)=>{// returns {card,to} or {from,to}
+   for(let a=0;a<4;a++)for(let b=0;b<8;b++)if(pileFits(a,b)&&s.piles[a].length)return{from:a,to:b};
+   const cs=p.hand.slice().sort((x,y)=>y.r-x.r);
+   for(const c of cs)if(c.r===13)for(let k=4;k<8;k++)if(!s.piles[k].length)return{card:c,to:k};
+   for(const c of cs)for(let k=0;k<8;k++)if(s.piles[k].length&&fits(c,k))return{card:c,to:k};
+   const empty=[0,1,2,3].find(k=>!s.piles[k].length);if(empty!==undefined&&cs.length)return{card:cs.find(c=>c.r!==13)||cs[0],to:empty};
+   return null;};
+  const apply=(p,m)=>{if(m.from!==undefined){s.piles[m.to].push(...s.piles[m.from]);s.piles[m.from]=[];}else{p.hand=p.hand.filter(c=>c.id!==m.card.id);s.piles[m.to].push(m.card);}};
+  let cur=(dl+1)%n,guard=0,idle=0,winner=null;
+  while(!winner&&guard++<1500){const p=P[cur];T.active=cur;let moved=false;
+   if(s.stock.length){const c=s.stock.pop();p.hand.push(c);if(p.human)T.note(`You drew the ${cstr(c)}.`);else T.say(p.i,'Draws a card');}
+   T.render();
+   if(p.human){s.srcPile=null;while(p.hand.length){
+     const r=await T.ask({prompt:'Tap a card (or a side pile), then tap where it goes.',kings:true,cards:()=>true,max:1,onSel:()=>{s.srcPile=null;},
+      canSource:k=>k<4&&s.piles[k].length>0,canTarget:k=>{if(s.srcPile!=null)return pileFits(s.srcPile,k);const c=T.sel[0];return c?fits(c,k):false;},
+      buttons:[{label:'End turn',v:'end'}],suggest:()=>{const m=findMove(p,2);if(!m)return{text:'No more plays. End your turn.'};if(m.from!==undefined)return{text:`Move the pile starting with the ${cstr(s.piles[m.from][0])} onto the ${s.piles[m.to].length?cstr(s.piles[m.to][s.piles[m.to].length-1]):'empty corner'}.`};return{cards:[m.card],text:`Play the ${cstr(m.card)} ${s.piles[m.to].length?'on the '+cstr(s.piles[m.to][s.piles[m.to].length-1]):m.to>=4?'in a corner':'in the empty spot'}.`};},
+      auto:()=>{const m=findMove(p,2);if(!m)return{v:'end'};s.srcPile=m.from??null;return{v:{to:m.to},cards:m.card?[m.card]:[]};}});
+     if(r.v==='end')break;const to=r.v.to;
+     if(s.srcPile!=null){apply(p,{from:s.srcPile,to});s.srcPile=null;moved=true;}else if(r.cards[0]&&fits(r.cards[0],to)){apply(p,{card:r.cards[0],to});moved=true;}
+     T.render();}}
+   else{await T.wait(800);let m,steps=0;while(p.hand.length&&(m=findMove(p,T.level))&&steps++<30){if(T.level===0&&Math.random()<.3)break;apply(p,m);moved=true;T.render();await T.wait(500);}}
+   if(!p.hand.length){winner=p;break;}
+   idle=moved||s.stock.length?0:idle+1;if(idle>=n*2){break;}
+   cur=(cur+1)%n;}
+  if(!winner){const min=Math.min(...P.map(p=>p.hand.length));winner=P.find(p=>p.hand.length===min);}
+  await T.over(winner.human?'<h3>You win!</h3>You emptied your hand first.':`<h3>${winner.name} wins</h3>${winner.name} ran out of cards first.`);}
+};
+
+/* ===================== shared trick-taking ===================== */
+async function runTrick(T,G,leader,{legalFor,ai,winnerOf,prompt}){const P=T.players,n=P.length;G.state.trick=[];
+ for(let k=0;k<n;k++){const pi=(leader+k)%n,p=P[pi];if(p.sitOut)continue;T.active=pi;T.render();const legal=legalFor(p);
+  const c=await humanPlay(T,p,legal,lv=>ai(p,legal,lv),prompt(p));p.hand=p.hand.filter(x=>x.id!==c.id);G.state.trick.push({p:pi,c});T.render();}
+ const w=winnerOf(G.state.trick);T.active=w;T.render();await T.wait(1000);return w;}
+// generic follow logic for partnership trump games. power(c) = strength in this trick (0 = can't win)
+function followAI(p,legal,trick,lv,power,partnerOf,lowKey){if(oops(lv))return pick(legal);const n=T.players.length;
+ const low=legal.slice().sort((a,b)=>lowKey(a)-lowKey(b));if(!trick.length)return null;
+ let wi=0;trick.forEach((t,k)=>{if(power(t.c)>power(trick[wi].c))wi=k;});const win=trick[wi],wp=power(win.c);
+ const partnerWin=partnerOf!=null&&win.p===partnerOf(p.i);const last=trick.length===n-1;
+ if(partnerWin&&(last||wp>=(lv===2?12:13)))return low[0];
+ const beat=legal.filter(c=>power(c)>wp).sort((a,b)=>power(a)-power(b));
+ if(beat.length){if(last||lv<2)return beat[0];const strong=beat.filter(c=>power(c)>=13);return(trick.length===1&&strong.length)?strong[strong.length-1]:beat[0];}
+ return low[0];}
+
+/* ===================== HEARTS ===================== */
+GAMES.hearts={name:'Hearts',tag:'Dodge the hearts',min:4,max:4,playersText:'4 players: you and 3 computer players',
+ blurb:'Avoid taking hearts and the Queen of Spades. Lowest score wins.',
+ rules:'<p>Everyone gets 13 cards. Before each hand you pass 3 cards (left, then right, then across, then no pass).</p><p>Whoever has the 2♣ leads it. You must <b>follow suit</b> if you can. If you can\'t, play anything. The highest card of the suit led takes the trick.</p><p>Each ♥ you take is 1 point. The <b>Q♠</b> is 13 points. You can\'t lead hearts until a heart has been played.</p><p><b>Shoot the moon:</b> take ALL the hearts and the Q♠, and everyone else gets 26 instead!</p><p>The game ends when someone reaches 100. <b>Lowest score wins.</b></p>',
+ seatInfo:p=>`${p.score} pts · this hand ${p.taken}`,
+ youInfo(){const me=T.players[0];return `Your score: <b>${me.score}</b> · Points taken this hand: <b>${me.taken}</b>`;},
+ center(el){const s=this.state;el.append(trickView(s.trick||[],4));if(s.msg)el.append(h('div',{class:'cinfo'},s.msg));},
+ scoreText(){return T.players.map(p=>`${p.name}: ${p.score}`).join(' · ')+' · First to 100 ends it';},
+ async play(T){const G=this,s=G.state,P=T.players;P.forEach(p=>p.score=0);let handNo=0;
+  const pts=c=>c.s==='♥'?1:(c.s==='♠'&&c.r===12?13:0);
+  while(Math.max(...P.map(p=>p.score))<100){P.forEach(p=>{p.hand=[];p.taken=0;});s.trick=[];await T.dealPrompt(handNo%4);const d=makeDeck();P.forEach((p,i)=>{p.hand=d.slice(i*13,i*13+13);p.taken=0;});s.trick=[];
+   const dir=[1,3,2,0][handNo%4];handNo++;
+   if(dir){const danger=c=>(c.s==='♠'&&c.r>=12?100+hv(c):0)+(c.s==='♥'?hv(c)*3:0)+hv(c);
+    const choose=(p,lv)=>lv===0&&Math.random()<.5?shuffle(p.hand).slice(0,3):p.hand.slice().sort((a,b)=>danger(b)-danger(a)).slice(0,3);
+    const passes=[];const tname=P[dir].name;
+    for(const p of P){if(p.human){const r=await T.ask({prompt:`Pick 3 cards to pass to ${['','the left','across','the right'][dir]} (${tname}).`,cards:()=>true,max:3,buttons:[{label:'Pass them',v:1,ok:sl=>sl.length===3}],suggest:()=>{const c=choose(p,2);return{v:1,cards:c,text:'Pass your most dangerous cards: high spades (Q, K, A) and high hearts.'};},auto:()=>({v:1,cards:choose(p,2)})});passes.push(r.cards);}else passes.push(choose(p,T.level));}
+    P.forEach((p,i)=>{p.hand=p.hand.filter(c=>!passes[i].some(x=>x.id===c.id));});P.forEach((p,i)=>{P[(i+dir)%4].hand.push(...passes[i]);});
+    T.note(`You received: ${passes[(4-dir)%4].map(cstr).join(', ')}`);}
+   let leader=P.findIndex(p=>p.hand.some(c=>c.r===2&&c.s==='♣')),broken=false;
+   for(let t=0;t<13;t++){const first=t===0;
+    const legalFor=p=>{const tr=s.trick;let L;
+     if(!tr.length){if(first)return p.hand.filter(c=>c.r===2&&c.s==='♣');L=broken?p.hand:p.hand.filter(c=>c.s!=='♥');return L.length?L:p.hand;}
+     const led=tr[0].c.s;L=p.hand.filter(c=>c.s===led);if(L.length)return L;
+     if(first){const safe=p.hand.filter(c=>!pts(c));if(safe.length)return safe;}return p.hand;};
+    const ai=(p,legal,lv)=>{const tr=s.trick;if(oops(lv))return pick(legal);
+     if(!tr.length){const non=legal.filter(c=>c.s!=='♥');const pool=non.length?non:legal;
+      if(lv===2){const cnt={};p.hand.forEach(c=>cnt[c.s]=(cnt[c.s]||0)+1);const safe=pool.filter(c=>!(c.s==='♠'&&hv(c)>=12));const pl=safe.length?safe:pool;return pl.sort((a,b)=>(cnt[a.s]-cnt[b.s])||(hv(a)-hv(b)))[0];}
+      return pool.sort((a,b)=>hv(a)-hv(b))[0];}
+     const led=tr[0].c.s;const follow=legal.filter(c=>c.s===led);
+     if(follow.length){const top=Math.max(...tr.filter(x=>x.c.s===led).map(x=>hv(x.c)));const under=follow.filter(c=>hv(c)<top).sort((a,b)=>hv(b)-hv(a));
+      const trickPts=sum(tr.map(x=>pts(x.c)));
+      if(under.length)return under[0];if(tr.length===3&&!trickPts){const noQ=follow.filter(c=>!(c.s==='♠'&&c.r===12));return(noQ.length?noQ:follow).sort((a,b)=>hv(b)-hv(a))[0];}
+      return follow.sort((a,b)=>hv(a)-hv(b))[0];}
+     const q=legal.find(c=>c.s==='♠'&&c.r===12);if(q)return q;const hs=legal.filter(c=>c.s==='♥').sort((a,b)=>hv(b)-hv(a));if(hs.length)return hs[0];
+     return legal.slice().sort((a,b)=>hv(b)-hv(a))[0];};
+    const w=await runTrick(T,G,leader,{legalFor,ai,winnerOf:tr=>{const led=tr[0].c.s;let b=tr[0];tr.forEach(x=>{if(x.c.s===led&&hv(x.c)>hv(b.c))b=x;});return b.p;},prompt:p=>s.trick.length?'Play a card (follow suit if you can).':(first?'You have the 2♣. Lead it.':'Your lead. Play any card.')});
+    const got=sum(s.trick.map(x=>pts(x.c)));if(s.trick.some(x=>x.c.s==='♥'))broken=true;P[w].taken+=got;
+    if(got)T.say(w,P[w].human?`+${got}`:`Ouch, +${got}`);s.trick=[];leader=w;T.render();}
+   const moon=P.find(p=>p.taken===26);
+   if(moon){P.forEach(p=>{if(p!==moon)p.score+=26;});}else P.forEach(p=>p.score+=p.taken);
+   if(Math.max(...P.map(p=>p.score))<100)await T.modal(`<h3>Hand ${handNo} done${moon?`: ${moon.human?'You':moon.name} shot the moon!`:''}</h3>${scoreTable([['Player','This hand','Total'],...P.map(p=>[p.name,moon?(p===moon?0:26):p.taken,p.score])])}`,[{label:'Next hand',v:1}]);}
+  const low=Math.min(...P.map(p=>p.score)),w=P.filter(p=>p.score===low);
+  await T.over(`<h3>${w.some(p=>p.human)?'You win!':w.map(p=>p.name).join(' & ')+' wins'}</h3>${scoreTable([['Player','Final score'],...P.map(p=>[p.name,p.score])])}<p>Lowest score wins.</p>`);}
+};
+
+/* ===================== SPADES ===================== */
+GAMES.spades={name:'Spades',tag:'Partner trick-taking',min:4,max:4,playersText:'4 players: you and a partner (across the table) vs. two opponents',
+ blurb:'Team up with your partner (across the table), bid how many tricks you\'ll take, then make it happen. Spades are always trump.',
+ rules:'<p>You and your <b>partner</b> (across from you) team up against the other two players. Everyone gets 13 cards.</p><p><b>Bid:</b> each player says how many tricks they think they\'ll win. Your bid and your partner\'s are added together. You can also bid <b>Nil</b>: a promise to take <b>zero</b> tricks. Make it for +100, but take even one trick and it\'s −100. A Nil player\'s tricks don\'t help their partner\'s bid.</p><p><b>Play:</b> follow suit if you can. If you can\'t, you may play a <b>spade</b>, which beats any other suit. Highest spade wins; otherwise the highest card of the suit led. You can\'t lead spades until one has been played.</p><p><b>Scoring:</b> make your team bid and you get 10 points per trick bid, plus 1 per extra trick ("bag"). Every 10 bags costs 100 points. Miss your bid and you lose 10 per trick bid. Tricks taken by a failed Nil count as bags.</p><p>First team to <b>300</b> wins.</p>',
+ seatInfo:p=>p.bid==null?'Bid: …':`Bid ${p.bid===0?'Nil':p.bid} · Won ${p.won}`,
+ youInfo(){const me=T.players[0],pt=T.players[2];if(me.bid==null)return '';if(me.bid===0)return `You bid <b>Nil</b>: take no tricks! · Tricks taken: <b>${me.won}</b>`;const pn=pt.bid===0;return `Your bid: <b>${me.bid}</b> · Tricks won: <b>${me.won}</b> · Team: ${me.won+(pn?0:pt.won)} of ${me.bid+(pn?0:(pt.bid||0))}${pn?` · ${pt.name} is going Nil`:''}`;},
+ center(el){el.append(trickView(this.state.trick||[],4));},
+ scoreText(){const t=this.state.team;return t?`${teamName(0)}: ${t[0]} (${this.state.bags[0]} bags) · ${teamName(1)}: ${t[1]} (${this.state.bags[1]} bags) · to 300`:'';},
+ async play(T){const G=this,s=G.state,P=T.players;s.team=[0,0];s.bags=[0,0];let dealer=3;
+  const estimate=(p,lv)=>{let e=0;const by={};p.hand.forEach(c=>(by[c.s]=by[c.s]||[]).push(c));
+   for(const su of SUITS){const cs=(by[su]||[]).sort((a,b)=>hv(b)-hv(a)),len=cs.length;
+    if(su==='♠'){cs.forEach(c=>{if(hv(c)===14)e+=1;else if(hv(c)===13)e+=.9;else if(hv(c)===12&&len>=3)e+=.6;});e+=Math.max(0,len-3)*.85;}
+    else{if(cs.some(c=>hv(c)===14))e+=len<=5?1:.7;if(cs.some(c=>hv(c)===13)&&len>=2&&len<=5)e+=.7;if(len<=1&&(by['♠']||[]).length>=3)e+=len===0?.8:.4;}}
+   let b=Math.max(1,Math.round(e));if(lv===0)b=Math.max(1,b+pick([-1,0,0,1,1]));return Math.min(13,b);};
+  const nilOK=p=>{const sp=p.hand.filter(c=>c.s==='♠');return !p.hand.some(c=>hv(c)>=13)&&sp.length<=3&&sp.every(c=>hv(c)<=9)&&p.hand.filter(c=>hv(c)>=11).length<=2;};
+  while(Math.max(...s.team)<300){dealer=(dealer+1)%4;P.forEach(p=>{p.hand=[];p.bid=null;p.won=0;});s.trick=[];await T.dealPrompt(dealer);const d=makeDeck();P.forEach((p,i)=>{p.hand=d.slice(i*13,i*13+13);p.bid=null;p.won=0;});s.trick=[];T.render();
+   for(let k=1;k<=4;k++){const p=P[(dealer+k)%4];T.active=p.i;T.render();
+    if(p.human){const est=estimate(p,2),nil=nilOK(p)&&P[2].bid!==0;const r=await T.ask({prompt:`How many tricks will you take?${P[2].bid!=null?` (${P[2].name} bid ${P[2].bid===0?'Nil':P[2].bid})`:''}`,noMain:true,buttons:[{label:'Nil (0)',v:0},...range(13).map(x=>({label:String(x+1),v:x+1}))],suggest:()=>({text:nil?'Your hand has no high cards and very few spades. Nil (zero tricks) is worth a try for 100 points!':`Count your aces, kings and long spades. Your hand looks like about ${est}.`}),auto:()=>({v:nil?0:est})});p.bid=r.v;}
+    else{await T.wait(700);const pb=P[(p.i+2)%4].bid;p.bid=(T.level>0&&pb!==0&&nilOK(p)&&Math.random()<(T.level===2?.85:.5))?0:estimate(p,T.level);T.say(p.i,p.bid===0?'Nil! I\'ll take no tricks.':`I bid ${p.bid}`);}T.render();}
+   let leader=(dealer+1)%4,broken=false;
+   for(let t=0;t<13;t++){
+    const legalFor=p=>{const tr=s.trick;if(!tr.length){const L=broken?p.hand:p.hand.filter(c=>c.s!=='♠');return L.length?L:p.hand;}const L=p.hand.filter(c=>c.s===tr[0].c.s);return L.length?L:p.hand;};
+    const ai=(p,legal,lv)=>{const tr=s.trick;const led0=tr.length?tr[0].c.s:null,pw0=c=>c.s==='♠'?100+hv(c):(c.s===led0?hv(c):0);
+     if(p.bid===0){if(!tr.length)return legal.slice().sort((a,b)=>(a.s==='♠')-(b.s==='♠')||hv(a)-hv(b))[0];const top=Math.max(...tr.map(x=>pw0(x.c)));const under=legal.filter(c=>pw0(c)<top).sort((a,b)=>pw0(b)-pw0(a)||hv(b)-hv(a));return under.length?under[0]:legal.slice().sort((a,b)=>pw0(a)-pw0(b)||hv(a)-hv(b))[0];}
+     const pn=P[(p.i+2)%4];if(pn.bid===0&&tr.length&&lv>0){let wi=tr[0];tr.forEach(x=>{if(pw0(x.c)>pw0(wi.c))wi=x;});if(wi.p===pn.i){const beat=legal.filter(c=>pw0(c)>pw0(wi.c)).sort((a,b)=>pw0(a)-pw0(b));if(beat.length)return beat[0];}}
+     if(!tr.length){if(oops(lv))return pick(legal);const aces=legal.filter(c=>c.s!=='♠'&&hv(c)===14);if(aces.length)return aces[0];
+      const team=p.i%2,need=(P[team].bid+P[team+2].bid)-((P[team].bid?P[team].won:0)+(P[team+2].bid?P[team+2].won:0));
+      const sp=legal.filter(c=>c.s==='♠').sort((a,b)=>hv(b)-hv(a));if(lv===2&&sp.length>=4&&need>0&&hv(sp[0])>=13)return sp[0];
+      const non=legal.filter(c=>c.s!=='♠');return(non.length?non:legal).slice().sort((a,b)=>hv(a)-hv(b))[0];}
+     const led=tr[0].c.s,pw=c=>c.s==='♠'?100+hv(c):(c.s===led?hv(c):0);return followAI(p,legal,tr,lv,pw,i=>(i+2)%4,c=>(c.s==='♠'?50:0)+hv(c));};
+    const w=await runTrick(T,G,leader,{legalFor,ai,winnerOf:tr=>{const led=tr[0].c.s,pw=c=>c.s==='♠'?100+hv(c):(c.s===led?hv(c):0);let b=tr[0];tr.forEach(x=>{if(pw(x.c)>pw(b.c))b=x;});return b.p;},prompt:p=>s.trick.length?'Play a card (follow suit if you can).':'Your lead.'});
+    if(s.trick.some(x=>x.c.s==='♠'))broken=true;P[w].won++;s.trick=[];leader=w;T.render();}
+   const rows=[['Team','Bid','Won','Points']];
+   for(const t of [0,1]){const mem=[P[t],P[t+2]];let pts=0,bags=0,notes=[];const reg=mem.filter(m=>m.bid>0),bid=sum(reg.map(m=>m.bid)),won=sum(reg.map(m=>m.won));
+    mem.filter(m=>m.bid===0).forEach(m=>{if(m.won===0){pts+=100;notes.push(`${m.name} made Nil +100`);}else{pts-=100;bags+=m.won;notes.push(`${m.name} missed Nil −100`);}});
+    if(reg.length){if(won>=bid){pts+=bid*10+(won-bid);bags+=won-bid;}else pts-=bid*10;}
+    s.bags[t]+=bags;if(s.bags[t]>=10){s.bags[t]-=10;pts-=100;notes.push('10 bags −100');}
+    s.team[t]+=pts;rows.push([teamName(t)+(notes.length?`<br><small>${notes.join(', ')}</small>`:''),mem.map(m=>m.bid===0?'Nil':m.bid).join(' + '),mem.map(m=>m.won).join(' + '),(pts>0?'+':'')+pts]);}
+   if(Math.max(...s.team)<300)await T.modal(`<h3>Hand over</h3>${scoreTable(rows)}<p>Score: ${teamName(0)} ${s.team[0]} · ${teamName(1)} ${s.team[1]}</p>`,[{label:'Next hand',v:1}]);}
+  const win=s.team[0]>=s.team[1]?0:1;await T.over(`<h3>${win===0?`You and ${T.players[2].name} win!`:`${teamName(1)} win`}</h3>${teamName(0)}: ${s.team[0]}<br>${teamName(1)}: ${s.team[1]}`);}
+};
+
+/* ===================== EUCHRE ===================== */
+GAMES.euchre={name:'Euchre',tag:'Fast partner game',min:4,max:4,playersText:'4 players: you and a partner (across the table) vs. two opponents',
+ blurb:'A quick partner game with a 24-card deck. Pick trump, then win at least 3 of 5 tricks.',
+ rules:'<p>Only 9s through Aces are used. You and your <b>partner</b> (across) team up. Everyone gets 5 cards and one card is turned face up.</p><p><b>Picking trump:</b> going around, each player can "order up" the face-up card\'s suit as trump (the dealer picks it up and discards one). If everyone passes, each player may name a different suit. If it comes back to the dealer, the dealer must pick.</p><p><b>Trump order:</b> the Jack of trump (<b>right bower</b>) is highest, then the other Jack of the same color (<b>left bower</b>, which counts as trump), then A, K, Q, 10, 9 of trump.</p><p>Follow suit if you can. The team that picked trump needs <b>3 of 5 tricks</b> for 1 point (all 5 = 2 points). If they fail, they\'re <b>euchred</b> and the other team gets 2.</p><p><b>Going alone:</b> whoever picks trump can choose to play without their partner, who lays their cards down for the hand. Win all 5 tricks alone for <b>4 points</b> (3 or 4 tricks still gets 1). First to <b>10</b> wins.</p>',
+ seatInfo(p){const s=this.state;if(p.sitOut)return 'Sitting out this hand';return `${p.won||0} tricks${s.maker===p.i?(s.alone?' · going alone!':' · picked trump'):''}${s.dealer===p.i?' · dealer':''}`;},
+ youInfo(){const s=this.state;if(T.players[0].sitOut)return `${T.players[2].name} is going alone. You sit this hand out. Trump: <b style="font-size:17px">${s.trump}</b>`;return s.trump?`${s.alone&&s.maker===0?'You\'re going alone! ':''}Trump: <b style="font-size:17px">${s.trump}</b> · Your team: ${(T.players[0].won||0)+(T.players[2].won||0)} tricks`:'';},
+ center(el){const s=this.state;if(s.up){el.append(h('div',{class:'pile'},cardEl(s.up),'Face-up card'));}else el.append(trickView(s.trick||[],4));if(s.trump)el.append(h('div',{class:'cinfo',html:`Trump: <b style="font-size:18px">${s.trump}</b>`}));},
+ scoreText(){const t=this.state.team;return t?`${teamName(0)}: ${t[0]} · ${teamName(1)}: ${t[1]} · to 10`:'';},
+ sortHand(cs){const tr=this.state.trump;const eff=c=>tr?effSuitE(c,tr):c.s;return cs.sort((a,b)=>((eff(a)===tr)-(eff(b)===tr))||(SUITS.indexOf(eff(a))-SUITS.indexOf(eff(b)))||(rankE(a,tr,null)-rankE(b,tr,null)));},
+ async play(T){const G=this,s=G.state,P=T.players;s.team=[0,0];s.dealer=3;
+  while(Math.max(...s.team)<10){s.dealer=(s.dealer+1)%4;s.up=null;s.trump=null;s.maker=null;s.trick=[];s.alone=false;P.forEach(p=>{p.hand=[];p.won=0;p.sitOut=false;});await T.dealPrompt(s.dealer);const d=makeDeck({ranks:[9,10,11,12,13,1]});P.forEach((p,i)=>{p.hand=d.slice(i*5,i*5+5);p.won=0;});s.up=d[20];s.trump=null;s.maker=null;s.trick=[];T.render();
+   const strength=(hand,tr)=>sum(hand.map(c=>{const e=effSuitE(c,tr);if(c.r===11&&c.s===tr)return 3;if(c.r===11&&e===tr)return 2.5;if(e===tr)return({1:2,13:1.5,12:1.2,10:1,9:.8})[c.r];return c.r===1?1:0;}))+(SUITS.filter(su=>su!==tr&&!hand.some(c=>effSuitE(c,tr)===su)).length*.5);
+   const thr=[5.2,6,6.4];
+   const decideAlone=async(pi,tr,hand)=>{const p=P[pi],st=strength(hand,tr);let alone;
+    if(p.human){const r=await T.ask({prompt:`${tr} is trump. Play with ${P[2].name}, or go alone for 4 points if you take all 5?`,buttons:[{label:`With ${P[2].name}`,v:false},{label:'Go alone',v:true}],noMain:true,suggest:()=>({text:st>=9.5?'Your hand is very strong. Going alone could win 4 points!':'Play with your partner. Going alone needs a really strong hand, like both bowers plus an ace.'}),auto:()=>({v:st>=9.5})});alone=r.v;}
+    else alone=st>=[99,9.6,9][T.level];
+    if(alone){s.alone=true;const o=P[(pi+2)%4];o.sitOut=true;o.hand=[];T.say(pi,'I\'m going alone!');T.render();await T.wait(700);}};
+   // round 1
+   for(let k=1;k<=4&&!s.trump;k++){const pi=(s.dealer+k)%4,p=P[pi];T.active=pi;T.render();const tr=s.up.s;
+    const handIf=pi===s.dealer?p.hand.concat([s.up]).sort((a,b)=>strength([b],tr)-strength([a],tr)).slice(0,5):p.hand;
+    let st=strength(handIf,tr)+((pi%2)===(s.dealer%2)?.7:-.4);
+    if(p.human){const r=await T.ask({prompt:`Make ${tr} trump?${pi===s.dealer?' (You\'d pick up the face-up card.)':''}`,buttons:[{label:pi===s.dealer?'Pick it up':'Order it up',v:true},{label:'Pass',v:false}],suggest:()=>({text:st>=thr[2]?`Yes, you have good ${tr} strength.`:'Pass. Not enough trump strength.'}),auto:()=>({v:st>=thr[2]})});if(r.v){s.trump=tr;s.maker=pi;}}
+    else{await T.wait(700);if(st+(T.level===0?(Math.random()-.5)*2:0)>=thr[T.level]){s.trump=tr;s.maker=pi;T.say(pi,pi===s.dealer?'I\'ll pick it up':'Order it up');}else T.say(pi,'Pass');}}
+   if(s.trump){const mk=P[s.maker];await decideAlone(s.maker,s.trump,s.maker===s.dealer?mk.hand.concat([s.up]).sort((a,b)=>strength([b],s.trump)-strength([a],s.trump)).slice(0,5):mk.hand);}
+   if(s.trump&&!P[s.dealer].sitOut){const dl=P[s.dealer];dl.hand.push(s.up);T.active=s.dealer;T.render();
+    if(dl.human){const r=await T.ask({prompt:'You picked up the card. Pick one card to discard.',cards:()=>true,max:1,buttons:[{label:'Discard',v:1,ok:sl=>sl.length===1}],suggest:()=>{const w=dl.hand.slice().sort((a,b)=>rankE(a,s.trump,null)-rankE(b,s.trump,null))[0];return{v:1,cards:[w],text:`Discard the ${cstr(w)}, your weakest card.`};},auto:()=>({v:1,cards:[dl.hand.slice().sort((a,b)=>rankE(a,s.trump,null)-rankE(b,s.trump,null))[0]]})});dl.hand=dl.hand.filter(c=>c.id!==r.cards[0].id);}
+    else{const w=dl.hand.slice().sort((a,b)=>rankE(a,s.trump,null)-rankE(b,s.trump,null))[0];dl.hand=dl.hand.filter(c=>c.id!==w.id);}}
+   // round 2
+   const turned=s.up.s;s.up=null;
+   for(let k=1;k<=4&&!s.trump;k++){const pi=(s.dealer+k)%4,p=P[pi];T.active=pi;T.render();const opts=SUITS.filter(x=>x!==turned);const best=opts.slice().sort((a,b)=>strength(p.hand,b)-strength(p.hand,a))[0];const stuck=pi===s.dealer;
+    if(p.human){const st=strength(p.hand,best);const r=await T.ask({prompt:stuck?'You\'re the dealer. You must name trump.':'Name a trump suit, or pass.',buttons:[...opts.map(x=>({label:`<span style="font-size:19px;color:${x==='♥'||x==='♦'?'#c0392b':'#111'}">${x}</span>`,v:x})),...(stuck?[]:[{label:'Pass',v:null}])],suggest:()=>({text:st>=thr[2]||stuck?`Name ${best}, your strongest suit.`:'Pass. No suit is strong enough.'}),auto:()=>({v:st>=thr[2]||stuck?best:null})});if(r.v){s.trump=r.v;s.maker=pi;}}
+    else{await T.wait(700);if(stuck||strength(p.hand,best)>=thr[T.level]){s.trump=best;s.maker=pi;T.say(pi,`${best} is trump`);}else T.say(pi,'Pass');}
+    if(s.trump)await decideAlone(s.maker,s.trump,P[s.maker].hand);}
+   T.render();let leader=(s.dealer+1)%4;if(P[leader].sitOut)leader=(leader+1)%4;
+   for(let t=0;t<5;t++){
+    const ledSuit=()=>s.trick.length?effSuitE(s.trick[0].c,s.trump):null;
+    const legalFor=p=>{if(!s.trick.length)return p.hand;const L=p.hand.filter(c=>effSuitE(c,s.trump)===ledSuit());return L.length?L:p.hand;};
+    const ai=(p,legal,lv)=>{if(!s.trick.length){if(oops(lv))return pick(legal);const tr=legal.filter(c=>effSuitE(c,s.trump)===s.trump).sort((a,b)=>rankE(b,s.trump,null)-rankE(a,s.trump,null));
+      if((p.i%2)===(s.maker%2)&&tr.length>=2)return tr[0];const aces=legal.filter(c=>c.r===1&&effSuitE(c,s.trump)!==s.trump);if(aces.length)return aces[0];return legal.slice().sort((a,b)=>rankE(a,s.trump,null)-rankE(b,s.trump,null))[0];}
+     const led=ledSuit();return followAI(p,legal,s.trick,lv,c=>rankE(c,s.trump,led),i=>(i+2)%4,c=>rankE(c,s.trump,null));};
+    const w=await runTrick(T,G,leader,{legalFor,ai,winnerOf:tr=>{const led=effSuitE(tr[0].c,s.trump);let b=tr[0];tr.forEach(x=>{if(rankE(x.c,s.trump,led)>rankE(b.c,s.trump,led))b=x;});return b.p;},prompt:()=>s.trick.length?'Play a card (follow suit if you can).':'Your lead.'});
+    P[w].won++;s.trick=[];leader=w;T.render();}
+   const mt=s.maker%2,mw=P[mt].won+P[mt+2].won;let msg;
+   if(mw===5&&s.alone){s.team[mt]+=4;msg=`${P[s.maker].human?'You':P[s.maker].name} went alone and took all 5 tricks: +4!`;}else if(mw===5){s.team[mt]+=2;msg=`${teamName(mt)} took all 5 tricks: +2`;}else if(mw>=3){s.team[mt]+=1;msg=`${teamName(mt)} made it with ${mw} tricks: +1`;}else{s.team[1-mt]+=2;msg=`${teamName(mt)} got euchred! ${teamName(1-mt)} +2`;}
+   if(Math.max(...s.team)<10)await T.modal(`<h3>Hand over</h3><p>${msg}</p><p>${teamName(0)}: ${s.team[0]} · ${teamName(1)}: ${s.team[1]}</p>`,[{label:'Next hand',v:1}]);}
+  const win=s.team[0]>=10?0:1;await T.over(`<h3>${win===0?`You and ${T.players[2].name} win!`:`${teamName(1)} win`}</h3>${teamName(0)}: ${s.team[0]}<br>${teamName(1)}: ${s.team[1]}`);}
+};
+const sameColor={'♠':'♣','♣':'♠','♥':'♦','♦':'♥'};
+function effSuitE(c,tr){return c.r===11&&tr&&c.s===sameColor[tr]?tr:c.s;}
+function rankE(c,tr,led){const e=effSuitE(c,tr),base={9:1,10:2,11:3,12:4,13:5,1:6}[c.r];
+ if(tr&&c.r===11&&c.s===tr)return 100;if(tr&&c.r===11&&e===tr)return 99;if(tr&&e===tr)return 50+base;if(led==null)return base;return e===led?10+base:0;}
+
+/* ===================== PINOCHLE ===================== */
+GAMES.pinochle={name:'Pinochle',tag:'Meld and take tricks',min:4,max:4,playersText:'4 players: you and a partner (across the table) vs. two opponents',
+ blurb:'A partner game with a special 48-card deck. Bid, show your melds, then win the scoring cards in tricks.',
+ rules:'<p>The deck has two each of 9, J, Q, K, 10 and A in every suit (48 cards). Card order, high to low: <b>A, 10, K, Q, J, 9</b>. You and your <b>partner</b> (across) team up.</p><p><b>Bid:</b> players bid how many points their team will score (starting at 250). The high bidder names trump. Then the bidder\'s <b>partner passes 4 cards</b> to the bidder, and the bidder passes 4 back.</p><p><b>Meld:</b> everyone shows scoring combos: Run (A-10-K-Q-J of trump) 150, Royal marriage (K-Q of trump) 40, Marriage (K-Q same suit) 20, Pinochle (Q♠ + J♦) 40, Aces around 100, Kings around 80, Queens around 60, Jacks around 40, 9 of trump 10.</p><p><b>Tricks:</b> follow suit and beat the winning card if you can. If you can\'t follow suit, you must trump. Aces, 10s and Kings are worth 10 each, and the last trick is worth 10.</p><p>Each team scores its meld plus trick points (if it won at least one trick). The bidding team must reach its bid, or it loses the bid amount. First to <b>1000</b> wins.</p>',
+ seatInfo(p){const s=this.state;return s.phase==='bid'?(p.bidTxt||'…'):`Meld ${p.meld||0}${s.bidder===p.i?` · bid ${s.bid}`:''}`;},
+ youInfo(){const s=this.state,me=T.players[0];return s.trump?`Trump: <b style="font-size:17px">${s.trump}</b> · Your meld: ${me.meld} (${me.meldTxt||'none'})`:(s.bid?`High bid: ${s.bid} (${T.players[s.bidder].name})`:'');},
+ center(el){const s=this.state;el.append(trickView(s.trick||[],4));if(s.trump)el.append(h('div',{class:'cinfo',html:`Trump <b style="font-size:17px">${s.trump}</b> · Bid ${s.bid} by ${T.players[s.bidder].name}`}));},
+ scoreText(){const t=this.state.team;return t?`${teamName(0)}: ${t[0]} · ${teamName(1)}: ${t[1]} · to 1000`:'';},
+ sortHand:cs=>cs.sort((a,b)=>(SUITS.indexOf(a.s)-SUITS.indexOf(b.s))||(PV[a.r]-PV[b.r])),
+ async play(T){const G=this,s=G.state,P=T.players;s.team=[0,0];let dealer=3;
+  while(Math.max(...s.team)<1000){dealer=(dealer+1)%4;s.trump=null;s.bid=0;s.trick=[];s.phase='bid';P.forEach(p=>{p.hand=[];p.bidTxt='';p.meld=0;});await T.dealPrompt(dealer);const d=makeDeck({ranks:[9,10,11,12,13,1],copies:2});P.forEach((p,i)=>{p.hand=d.slice(i*12,i*12+12);p.meld=0;p.meldTxt='';p.bidTxt='';p.tricks=0;p.pts=0;});
+   s.phase='bid';s.trump=null;s.bid=0;s.bidder=null;s.trick=[];T.render();
+   const est=p=>{const best=Math.max(...SUITS.map(su=>pinoMeld(p.hand,su).pts+p.hand.filter(c=>c.s===su).length*10));return best+p.hand.filter(c=>c.r===1).length*10+150;};
+   let active=[0,1,2,3],cur=(dealer+1)%4,high=240,highBy=null,guard=0;
+   while(guard++<60){if(active.length===1&&highBy!=null)break;if(!active.includes(cur)){cur=(cur+1)%4;continue;}
+    if(active.length===1&&highBy==null){high=250;highBy=cur;break;}
+    const p=P[cur];T.active=cur;T.render();const next=high+10;const max=est(p)+(T.level===0?R(60)-30:0);
+    let bid=null;
+    if(p.human){const e=est(p);const r=await T.ask({prompt:`Bid ${next} or more, or pass.`,buttons:[{label:`Bid ${next}`,v:next},{label:`Bid ${next+20}`,v:next+20},{label:`Bid ${next+50}`,v:next+50},{label:'Pass',v:null}],suggest:()=>({text:`Your hand could support a bid around ${Math.round(e/10)*10}. ${e>=next?'Bid!':'Pass.'}`}),auto:()=>({v:e>=next?next:null})});bid=r.v;}
+    else{await T.wait(650);if(max>=next&&!(highBy!=null&&highBy===(cur+2)%4&&T.level>0&&max<next+40))bid=next;}
+    if(bid){high=bid;highBy=cur;p.bidTxt=`Bid ${bid}`;T.say(cur,`${bid}`);}else{active=active.filter(x=>x!==cur);p.bidTxt='Pass';T.say(cur,'Pass');}
+    cur=(cur+1)%4;}
+   s.bid=high;s.bidder=highBy;const bp=P[highBy];
+   const bestTrump=p=>SUITS.slice().sort((a,b)=>(pinoMeld(p.hand,b).pts+p.hand.filter(c=>c.s===b).length*12)-(pinoMeld(p.hand,a).pts+p.hand.filter(c=>c.s===a).length*12))[0];
+   s.forced=!P.some(q=>q.bidTxt&&q.bidTxt.startsWith('Bid'));if(s.forced){bp.bidTxt='Bid 250';}
+   if(bp.human){const r=await T.ask({prompt:s.forced?`Everyone passed, so you take the bid at 250. Name trump.`:`You won the bid at ${high}. Name trump.`,buttons:SUITS.map(x=>({label:`<span style="font-size:19px;color:${x==='♥'||x==='♦'?'#c0392b':'#111'}">${x}</span>`,v:x})),suggest:()=>({text:`Name ${bestTrump(bp)}: best melds and length.`}),auto:()=>({v:bestTrump(bp)})});s.trump=r.v;}else{s.trump=bestTrump(bp);T.say(highBy,`Trump is ${s.trump}`);}
+   // passing: bidder's partner sends 4 cards, bidder sends 4 back
+   {const bidder=bp,partner=P[(highBy+2)%4],tr=s.trump;
+    const passScore=(c,toBidder)=>toBidder?((c.s===tr?50:0)+(c.r===1?30:0)+PV[c.r]):(-(c.s===tr?50:0)-(c.r===1?30:0)-([1,10,13].includes(c.r)?10:0)-PV[c.r]);
+    const choose=(p,toBidder,lv)=>{if(lv===0&&Math.random()<.4)return shuffle(p.hand).slice(0,4);
+     const keepMeld=pinoMeld(p.hand,tr).pts;return p.hand.slice().sort((a,b)=>{const ma=keepMeld-pinoMeld(p.hand.filter(x=>x.id!==a.id),tr).pts,mb=keepMeld-pinoMeld(p.hand.filter(x=>x.id!==b.id),tr).pts;return toBidder?(passScore(b,true)-passScore(a,true)):((ma-mb)||(passScore(b,false)-passScore(a,false)));}).slice(0,4);};
+    for(const [from,to,toB] of [[partner,bidder,true],[bidder,partner,false]]){T.active=from.i;T.render();let four;
+     if(from.human){const sug=choose(from,toB,2);const r=await T.ask({prompt:toB?`Pass 4 cards to your partner ${to.name}, who won the bid. Send trump and Aces.`:`Your partner passed you 4 cards. Now pass 4 back to ${to.name}.`,cards:()=>true,max:4,buttons:[{label:'Pass these 4',v:1,ok:sl=>sl.length===4}],suggest:()=>({v:1,cards:sug,text:toB?'Send your best trump cards and Aces. They help the bidder take tricks and make melds.':'Send back cards that aren\'t part of your melds, like low off-suit cards.'}),auto:()=>({v:1,cards:choose(from,toB,2)})});four=r.cards;}
+     else{await T.wait(800);four=choose(from,toB,T.level);T.say(from.i,`Passing 4 to ${to.human?'you':to.name}`);}
+     from.hand=from.hand.filter(c=>!four.some(x=>x.id===c.id));to.hand.push(...four);if(to.human)T.note(`You received: ${four.map(cstr).join(', ')}`);T.render();}}
+   s.phase='play';P.forEach(p=>{const m=pinoMeld(p.hand,s.trump);p.meld=m.pts;p.meldTxt=m.txt.join(', ');});T.render();
+   await T.modal(`<h3>Melds (trump ${s.trump})</h3>${scoreTable([['Player','Meld','Points'],...P.map(p=>[p.name,p.meldTxt||'none',p.meld])])}`,[{label:'Play tricks',v:1}]);
+   let leader=highBy;
+   for(let t=0;t<12;t++){
+    const legalFor=p=>pinoLegal(p.hand,s.trick,s.trump);
+    const ai=(p,legal,lv)=>{if(oops(lv))return pick(legal);const counter=c=>[1,10,13].includes(c.r);
+     if(!s.trick.length){const aces=legal.filter(c=>c.r===1&&c.s!==s.trump);if(aces.length)return aces[0];const non=legal.filter(c=>!counter(c)&&c.s!==s.trump);return(non.length?non:legal).slice().sort((a,b)=>PV[a.r]-PV[b.r])[0];}
+     const w=pinoWinner(s.trick,s.trump),partnerWin=w.p===(p.i+2)%4;
+     if(partnerWin&&lv>=1){const sm=legal.filter(counter).sort((a,b)=>PV[a.r]-PV[b.r]);const safe=s.trick.length===3||w.c.s===s.trump||PV[w.c.r]>=5;if(sm.length&&safe)return sm[0];}
+     const wins=legal.filter(c=>pinoWinner([...s.trick,{p:p.i,c}],s.trump).p===p.i).sort((a,b)=>(a.s===s.trump)-(b.s===s.trump)||PV[a.r]-PV[b.r]);
+     if(wins.length&&!partnerWin)return wins[0];return legal.slice().sort((a,b)=>(counter(a)-counter(b))||(PV[a.r]-PV[b.r]))[0];};
+    const w=await runTrick(T,G,leader,{legalFor,ai,winnerOf:tr=>pinoWinner(tr,s.trump).p,prompt:()=>s.trick.length?'Play a card: follow suit and beat it if you can, trump if you can\'t follow.':'Your lead.'});
+    const pts=s.trick.filter(x=>[1,10,13].includes(x.c.r)).length*10+(t===11?10:0);P[w].tricks++;P[w].pts+=pts;s.trick=[];leader=w;T.render();}
+   const rows=[['Team','Meld','Tricks','Score']];
+   for(const tm of [0,1]){const took=P[tm].tricks+P[tm+2].tricks>0,meld=took?P[tm].meld+P[tm+2].meld:0,tp=P[tm].pts+P[tm+2].pts;let sc=meld+tp;
+    if(highBy%2===tm&&sc<s.bid)sc=-s.bid;s.team[tm]+=sc;rows.push([teamName(tm),meld,tp,(sc>0?'+':'')+sc]);}
+   if(Math.max(...s.team)<1000)await T.modal(`<h3>Hand over</h3><p>Bid ${s.bid} by ${bp.name}.</p>${scoreTable(rows)}<p>${teamName(0)}: ${s.team[0]} · ${teamName(1)}: ${s.team[1]}</p>`,[{label:'Next hand',v:1}]);}
+  const win=s.team[0]>=s.team[1]?0:1;await T.over(`<h3>${win===0?`You and ${T.players[2].name} win!`:`${teamName(1)} win`}</h3>${teamName(0)}: ${s.team[0]}<br>${teamName(1)}: ${s.team[1]}`);}
+};
+const PV={9:1,11:2,12:3,13:4,10:5,1:6};
+function pinoWinner(tr,trump){const led=tr[0].c.s;let b=tr[0];for(const x of tr.slice(1)){const bt=b.c.s===trump,xt=x.c.s===trump;
+ if(xt&&!bt)b=x;else if(xt===bt&&x.c.s===b.c.s&&PV[x.c.r]>PV[b.c.r])b=x;}return b;}
+function pinoLegal(hand,tr,trump){if(!tr.length)return hand;const led=tr[0].c.s,w=pinoWinner(tr,trump).c;const fol=hand.filter(c=>c.s===led);
+ if(fol.length){if(w.s!==led)return fol;const beat=fol.filter(c=>PV[c.r]>PV[w.r]);return beat.length?beat:fol;}
+ const tp=hand.filter(c=>c.s===trump);if(tp.length){if(w.s===trump){const beat=tp.filter(c=>PV[c.r]>PV[w.r]);return beat.length?beat:tp;}return tp;}return hand;}
+function pinoMeld(hand,trump){const cnt=(r,su)=>hand.filter(c=>c.r===r&&c.s===su).length;let pts=0;const txt=[];
+ const runs=Math.min(...[1,10,13,12,11].map(r=>cnt(r,trump)));if(runs){pts+=150*runs;txt.push(runs>1?'2 runs':'Run');}
+ for(const su of SUITS){let m=Math.min(cnt(13,su),cnt(12,su));if(su===trump){m-=runs;if(m>0){pts+=40*m;txt.push('Royal marriage'+(m>1?' ×2':''));}}else if(m>0){pts+=20*m;txt.push(`Marriage ${su}`+(m>1?' ×2':''));}}
+ const nine=cnt(9,trump);if(nine){pts+=10*nine;txt.push(`9 of trump${nine>1?' ×2':''}`);}
+ [[1,100,'Aces'],[13,80,'Kings'],[12,60,'Queens'],[11,40,'Jacks']].forEach(([r,v,nm])=>{const k=Math.min(...SUITS.map(su=>cnt(r,su)));if(k){pts+=v*k;txt.push(`${nm} around`);}});
+ const pn=Math.min(cnt(12,'♠'),cnt(11,'♦'));if(pn){pts+=40*pn;txt.push('Pinochle'+(pn>1?' ×2':''));}
+ return{pts,txt};}
+
+/* ===================== GIN RUMMY ===================== */
+const ginVal=c=>Math.min(10,c.r);
+function ginBest(hand){// returns {dead, melds:[[cards]], deadCards}
+ const melds=[];const by={};hand.forEach(c=>(by[c.r]=by[c.r]||[]).push(c));
+ for(const r in by){const g=by[r];if(g.length>=3){melds.push(g.slice());if(g.length===4)for(let k=0;k<4;k++)melds.push(g.filter((_,j)=>j!==k));}}
+ for(const su of SUITS){const cs=hand.filter(c=>c.s===su).sort((a,b)=>a.r-b.r);
+  for(let i=0;i<cs.length;i++){let run=[cs[i]];for(let j=i+1;j<cs.length&&cs[j].r===run[run.length-1].r+1;j++){run.push(cs[j]);if(run.length>=3)melds.push(run.slice());}}}
+ let best={dead:sum(hand.map(ginVal)),melds:[]};
+ const rec=(idx,used,chosen)=>{const dead=sum(hand.filter(c=>!used.has(c.id)).map(ginVal));if(dead<best.dead)best={dead,melds:chosen.slice()};
+  for(let k=idx;k<melds.length;k++){const m=melds[k];if(m.some(c=>used.has(c.id)))continue;m.forEach(c=>used.add(c.id));chosen.push(m);rec(k+1,used,chosen);chosen.pop();m.forEach(c=>used.delete(c.id));}};
+ rec(0,new Set(),[]);const inM=new Set(best.melds.flat().map(c=>c.id));best.deadCards=hand.filter(c=>!inM.has(c.id));return best;}
+GAMES.gin={name:'Gin Rummy',tag:'Make sets and runs',min:2,max:2,playersText:'2 players: you vs. one computer player',
+ blurb:'Build sets and runs, keep your leftover points low, and knock before your opponent does.',
+ rules:'<p>Each player gets 10 cards. On your turn, <b>draw</b> one card (from the deck or the top of the discard pile), then <b>discard</b> one.</p><p>Try to arrange your cards into <b>melds</b>: sets (three or four of a kind) or runs (three or more in a row of the same suit, Ace is low). Cards not in melds are <b>deadwood</b>: face cards count 10, Aces 1, others face value.</p><p>When your deadwood is <b>10 or less</b>, you can <b>knock</b>. Your opponent can add their loose cards onto your melds. You score the difference in deadwood. If your opponent ends up with less or equal deadwood, they "undercut" you and score instead, plus 25.</p><p><b>Gin</b> (0 deadwood) scores 25 bonus. The first player to reach <b>100</b> ends the game.</p><p><b>End-of-game bonuses:</b> the winner gets <b>100</b> for the game, and each player gets a <b>20-point box bonus</b> for every hand they won. If the loser never won a hand, it\'s a <b>shutout</b> and the winner\'s total is doubled. Highest final total wins.</p><p>Tip: your melds and deadwood are shown above your hand.</p>',
+ sortHand:cs=>{const b=ginBest(cs);const inM=b.melds.flat();const rest=b.deadCards.sort((a,c)=>a.r-c.r);return [...inM,...rest];},
+ youSets(){const me=T.players[0];if(!me.hand.length)return '';const b=ginBest(me.hand);return `<span class="clab">Your melds:</span>${b.melds.length?b.melds.map(m=>`<span class="grp">${cardsHTML(m)}</span>`).join(''):'<span>none yet</span>'}<span style="margin-left:6px">Deadwood: <b style="color:#1d2433;font-size:15px">${b.dead}</b></span>`;},
+ center(el){const s=this.state;el.append(h('div',{class:'piles'},h('div',{class:'pile'},s.stock.length?cardEl(null):h('div',{class:'slot'}),`Deck ${s.stock.length}`),h('div',{class:'pile'},s.disc.length?cardEl(s.disc[s.disc.length-1]):h('div',{class:'slot'}),'Discard')));if(s.msg)el.append(h('div',{class:'cinfo'},s.msg));},
+ scoreText(){return `You: ${T.players[0].score} · ${T.players[1].name}: ${T.players[1].score} · to 100`;},
+ async play(T){const G=this,s=G.state,P=T.players;P.forEach(p=>{p.score=0;p.boxes=0;});let dealer=1;
+  while(Math.max(...P.map(p=>p.score))<100){dealer=1-dealer;s.stock=[];s.disc=[];s.msg='';P.forEach(p=>{p.hand=[];p.reveal=false;});await T.dealPrompt(dealer);const d=makeDeck();P.forEach((p,i)=>{p.hand=d.slice(i*10,i*10+10);p.reveal=false;});s.stock=d.slice(20);s.disc=[s.stock.pop()];s.msg='';let cur=1-dealer,result=null;
+   const bestDiscard=(hand,ban)=>hand.filter(c=>!ban||c.id!==ban.id).map(c=>({c,d:ginBest(hand.filter(x=>x.id!==c.id)).dead})).sort((a,b)=>a.d-b.d||ginVal(b.c)-ginVal(a.c));
+   const wantDisc=(p,lv)=>{const top=s.disc[s.disc.length-1];if(!top)return false;const now=bestDiscard(p.hand,null)[0].d;const w=bestDiscard(p.hand.concat([top]),top)[0].d;return w<now-(lv===0?6:lv===1?2:0)&&w<now;};
+   while(!result){const p=P[cur],o=P[1-cur];T.active=cur;T.render();
+    if(s.stock.length<=2){result={draw:true};break;}
+    let took=null;
+    if(p.human){const top=s.disc[s.disc.length-1];const r=await T.ask({prompt:'Draw a card: from the deck, or take the top discard.',buttons:[{label:'Draw from deck',v:'stock'},{label:`Take ${top?cstr(top):'—'}`,v:'disc',ok:()=>!!top}],suggest:()=>({text:wantDisc(p,2)?`Take the ${cstr(top)}. It fits your melds.`:'Draw from the deck. The discard doesn\'t help you.'}),auto:()=>({v:wantDisc(p,2)?'disc':'stock'})});
+     if(r.v==='disc'){took=s.disc.pop();p.hand.push(took);}else{const c=s.stock.pop();p.hand.push(c);T.note(`You drew the ${cstr(c)}.`);}
+     T.render();
+     const r2=await T.ask({prompt:'Discard a card. Knock if your deadwood will be 10 or less.',cards:c=>!took||c.id!==took.id,max:1,buttons:[{label:'Discard',v:'disc',ok:sl=>sl.length===1},{label:'Knock',v:'knock',ok:sl=>sl.length===1&&ginBest(p.hand.filter(c=>c.id!==sl[0].id)).dead<=10}],
+      suggest:()=>{const b=bestDiscard(p.hand,took)[0];return{v:b.d<=10?'knock':'disc',cards:[b.c],text:`Discard the ${cstr(b.c)}${b.d<=10?`, then knock (deadwood ${b.d})${b.d===0?'. That\'s gin!':''}`:''}.`};},auto:()=>{const b=bestDiscard(p.hand,took)[0];return{v:b.d<=10?'knock':'disc',cards:[b.c]};}});
+     const dc=r2.cards[0];p.hand=p.hand.filter(c=>c.id!==dc.id);s.disc.push(dc);if(r2.v==='knock')result={knocker:cur};}
+    else{await T.wait(800);if(wantDisc(p,T.level)){took=s.disc.pop();p.hand.push(took);T.say(cur,`Takes the ${cstr(took)}`);}else{p.hand.push(s.stock.pop());T.say(cur,'Draws from the deck');}
+     T.render();await T.wait(700);let opts=bestDiscard(p.hand,took);const pickD=T.level===0&&Math.random()<.4?pick(opts.slice(0,3)):opts[0];
+     p.hand=p.hand.filter(c=>c.id!==pickD.c.id);s.disc.push(pickD.c);const kn=pickD.d<=([5,10,10][T.level])&&!(T.level===2&&pickD.d>0&&pickD.d<=3&&s.stock.length>20&&Math.random()<.5);if(kn)result={knocker:cur};else T.say(cur,`Discards ${cstr(pickD.c)}`);}
+    T.render();cur=1-cur;}
+   let msg;
+   if(result.draw){msg='The deck ran low. This hand is a draw.';}
+   else{const k=P[result.knocker],o=P[1-result.knocker];const kb=ginBest(k.hand);let ob=ginBest(o.hand);let odead=ob.dead,laid=[];
+    if(kb.dead>0){let changed=true;let loose=ob.deadCards.slice();const ms=kb.melds.map(m=>m.slice());
+     while(changed){changed=false;for(const c of loose.slice()){for(const m of ms){const isSet=m.every(x=>x.r===m[0].r);let fit=false;
+        if(isSet)fit=c.r===m[0].r&&m.length<4;else{const srt=m.slice().sort((a,b)=>a.r-b.r);fit=c.s===srt[0].s&&(c.r===srt[0].r-1||c.r===srt[srt.length-1].r+1);}
+        if(fit){m.push(c);loose=loose.filter(x=>x.id!==c.id);laid.push(c);changed=true;break;}}}}
+     odead=sum(loose.map(ginVal));}
+    k.reveal=true;o.reveal=true;T.render();
+    if(kb.dead===0){const pts=25+odead;k.score+=pts;k.boxes++;msg=`${k.human?'You':k.name} went <b>gin</b>! +${pts}`;}
+    else if(odead<=kb.dead){const pts=25+kb.dead-odead;o.score+=pts;o.boxes++;msg=`${k.human?'You':k.name} knocked with ${kb.dead}, but ${o.human?'you':o.name} undercut with ${odead}! ${o.human?'You get':o.name+' gets'} +${pts}`;}
+    else{const pts=odead-kb.dead;k.score+=pts;k.boxes++;msg=`${k.human?'You':k.name} knocked with ${kb.dead} deadwood vs. ${odead}${laid.length?` (after laying off ${laid.map(cstr).join(', ')})`:''}. +${pts}`;}}
+   await T.wait(800);
+   if(Math.max(...P.map(p=>p.score))<100)await T.modal(`<h3>Hand over</h3><p>${msg}</p><p>You: ${P[0].score} · ${P[1].name}: ${P[1].score}</p>`,[{label:'Next hand',v:1}]);
+   else s.msg=msg;}
+  const g=P[0].score>=100?P[0]:P[1],l=g===P[0]?P[1]:P[0];const fin=P.map(p=>{let t=p.score+p.boxes*20+(p===g?100:0);return t;});const shut=l.boxes===0;if(shut)fin[g.i]*=2;
+  const winner=fin[0]>=fin[1]?P[0]:P[1];
+  await T.over(`<h3>${winner.human?'You win!':P[1].name+' wins'}</h3><p>${s.msg}</p>${scoreTable([['','Points','Box bonus','Game bonus','Final'],...P.map(p=>[p.name,p.score,`${p.boxes} × 20`,p===g?100:0,fin[p.i]+(shut&&p===g?' (shutout ×2)':'')])])}`);}
+};
+
+/* ===================== CRIBBAGE ===================== */
+const cv=c=>Math.min(10,c.r);
+function cribScore(hand,starter,isCrib){const all=starter?hand.concat([starter]):hand.slice();let pts=0;const parts=[];
+ let f=0;for(let m=1;m<(1<<all.length);m++){let t=0;for(let k=0;k<all.length;k++)if(m>>k&1)t+=cv(all[k]);if(t===15)f++;}if(f){pts+=f*2;parts.push(`${f} fifteen${f>1?'s':''} for ${f*2}`);}
+ let pr=0;for(let i=0;i<all.length;i++)for(let j=i+1;j<all.length;j++)if(all[i].r===all[j].r)pr++;if(pr){pts+=pr*2;parts.push(`${pr} pair${pr>1?'s':''} for ${pr*2}`);}
+ const cnt={};all.forEach(c=>cnt[c.r]=(cnt[c.r]||0)+1);let runPts=0;
+ for(let start=1;start<=13;start++){if(!cnt[start]||cnt[start-1])continue;let len=0,mult=1;while(cnt[start+len]){mult*=cnt[start+len];len++;}if(len>=3)runPts+=len*mult;}
+ if(runPts){pts+=runPts;parts.push(`runs for ${runPts}`);}
+ if(hand.length===4&&hand.every(c=>c.s===hand[0].s)){if(starter&&starter.s===hand[0].s){pts+=5;parts.push('flush for 5');}else if(!isCrib){pts+=4;parts.push('flush for 4');}}
+ if(starter&&hand.some(c=>c.r===11&&c.s===starter.s)){pts+=1;parts.push('nobs for 1');}
+ return{pts,parts};}
+function pegPoints(seq){if(!seq.length)return{pts:0,why:[]};const total=sum(seq.map(cv));let pts=0;const why=[];
+ if(total===15){pts+=2;why.push('15 for 2');}if(total===31){pts+=2;why.push('31 for 2');}
+ const last=seq[seq.length-1];let k=1;while(k<seq.length&&seq[seq.length-1-k].r===last.r)k++;if(k>=2){const v={2:2,3:6,4:12}[k];pts+=v;why.push(['','','pair','three of a kind','four of a kind'][k]+` for ${v}`);}
+ for(let L=seq.length;L>=3;L--){const rs=seq.slice(-L).map(c=>c.r).sort((a,b)=>a-b);if(rs.every((r,i)=>i===0||r===rs[i-1]+1)){pts+=L;why.push(`run of ${L} for ${L}`);break;}}
+ return{pts,why};}
+GAMES.cribbage={name:'Cribbage',tag:'Count to 121',min:2,max:2,playersText:'2 players: you vs. one computer player',
+ blurb:'Make fifteens, pairs and runs as you play and when you count your hand. First to 121 wins.',
+ rules:'<p>Each player gets 6 cards and puts 2 into the <b>crib</b>, an extra hand that belongs to the dealer. A <b>starter</b> card is cut. If it\'s a Jack, the dealer scores 2.</p><p><b>The play:</b> take turns laying cards and saying the running total (face cards = 10, Ace = 1). Score as you go: total of <b>15</b> = 2, <b>31</b> = 2, a <b>pair</b> = 2, three of a kind = 6, a <b>run</b> of 3+ = 1 per card. If you can\'t play without going over 31, say "Go". The other player keeps playing, and the last card scores 1.</p><p><b>The show:</b> each hand is counted with the starter: every combination adding to 15 = 2, pairs = 2, runs = 1 per card, a 4-card flush = 4, a Jack matching the starter\'s suit = 1. Then the dealer counts the crib.</p><p>First to <b>121</b> wins.</p>',
+ sortHand:cs=>cs.sort((a,b)=>a.r-b.r||SUITS.indexOf(a.s)-SUITS.indexOf(b.s)),
+ seatInfo:p=>`${p.score} points`,
+ youInfo(){return `Your score: <b>${T.players[0].score}</b>`;},
+ center(el){const s=this.state;const row=h('div',{class:'piles'});row.append(h('div',{class:'pile'},s.starter?cardEl(s.starter):cardEl(null),'Starter'));row.append(h('div',{class:'pile'},s.crib&&s.crib.length?cardEl(null):h('div',{class:'slot'}),`Crib (${T.players[s.dealer].name})`));el.append(row);
+  if(s.seq){el.append(h('div',{class:'cinfo',html:`Count: <b style="font-size:18px">${sum(s.seq.map(cv))}</b>`}));const r=h('div',{class:'mini-row',style:'justify-content:center;max-width:300px'});s.seq.forEach(c=>r.append(cardEl(c,{cls:'sm'})));el.append(r);}
+  if(s.msg)el.append(h('div',{class:'cinfo'},s.msg));},
+ scoreText(){return T.players.map(p=>`${p.name}: ${p.score}`).join(' · ')+' · to 121';},
+ async play(T){const G=this,s=G.state,P=T.players;P.forEach(p=>p.score=0);s.dealer=1;let winner=null;
+  const add=(p,n,why)=>{if(!n||winner)return;p.score=Math.min(121,p.score+n);if(why)T.say(p.i,why);if(p.score>=121)winner=p;T.render();};
+  while(!winner){s.dealer=1-s.dealer;P.forEach(p=>{p.hand=[];p.reveal=false;});s.crib=[];s.starter=null;s.seq=null;s.msg='';await T.dealPrompt(s.dealer);const d=makeDeck();P.forEach((p,i)=>{p.hand=d.slice(i*6,i*6+6);p.reveal=false;});s.crib=[];s.starter=null;s.seq=null;s.msg='';T.render();
+   const discardChoice=(p,lv,own)=>{const hd=p.hand;let best=null;const rest=d.slice(12);
+    for(let a=0;a<6;a++)for(let b=a+1;b<6;b++){const keep=hd.filter((_,k)=>k!==a&&k!==b);let v;
+     if(lv===0)v=Math.random();else if(lv===1)v=cribScore(keep,null,false).pts+(own?1:-1)*cribScore([hd[a],hd[b]],null,true).pts*.5;
+     else{let t=0;const samp=rest.filter((_,k)=>k%2===0);samp.forEach(st=>t+=cribScore(keep,st,false).pts);v=t/samp.length+(own?1:-1)*cribScore([hd[a],hd[b]],null,true).pts*.6;}
+     if(!best||v>best.v)best={v,cards:[hd[a],hd[b]]};}return best.cards;};
+   for(const p of P){const own=s.dealer===p.i;let two;
+    if(p.human){const r=await T.ask({prompt:`Pick 2 cards for ${own?'your':P[s.dealer].name+'\'s'} crib.`,cards:()=>true,max:2,buttons:[{label:'Send to crib',v:1,ok:sl=>sl.length===2}],suggest:()=>{const c=discardChoice(p,2,own);return{v:1,cards:c,text:`Send the ${c.map(cstr).join(' and ')}. That keeps your best scoring hand.`};},auto:()=>({v:1,cards:discardChoice(p,2,own)})});two=r.cards;}
+    else two=discardChoice(p,T.level,own);
+    p.hand=p.hand.filter(c=>!two.some(x=>x.id===c.id));s.crib.push(...two);}
+   T.render();{const cutter=P[1-s.dealer];if(cutter.human){await T.ask({prompt:`${P[s.dealer].name} asks you to cut the deck for the starter card.`,buttons:[{label:'✂️ Cut the deck',v:1}],auto:()=>({v:1})});}else{T.say(cutter.i,'Cuts the deck');}}await T.wait(600);s.starter=d[12];T.render();if(s.starter.r===11)add(P[s.dealer],2,'His heels! +2');await T.wait(800);if(winner)break;
+   // pegging
+   const hands=P.map(p=>p.hand.slice());let cur=1-s.dealer,lastPlayer=null;s.seq=[];const go=[false,false];
+   const canPlay=i=>hands[i].some(c=>sum(s.seq.map(cv))+cv(c)<=31);
+   const pegChoice=(i,lv)=>{const L=hands[i].filter(c=>sum(s.seq.map(cv))+cv(c)<=31);if(oops(lv)||lv===0&&Math.random()<.4)return pick(L);
+    return L.map(c=>{const pp=pegPoints([...s.seq,c]).pts;const tot=sum(s.seq.map(cv))+cv(c);let v=pp*10;if(tot===5||tot===21)v-=3;if(!s.seq.length&&cv(c)===5)v-=3;if(lv===2&&tot<15&&tot+10>=15)v-=1;return{c,v:v-cv(c)*.1};}).sort((a,b)=>b.v-a.v)[0].c;};
+   let guard=0;
+   while((hands[0].length||hands[1].length)&&!winner&&guard++<100){const p=P[cur];T.active=cur;T.render();
+    if(canPlay(cur)){let c;
+     if(p.human){const ok=new Set(hands[0].filter(x=>sum(s.seq.map(cv))+cv(x)<=31).map(x=>x.id));const r=await T.ask({prompt:`Play a card. Count is ${sum(s.seq.map(cv))}.`,cards:x=>ok.has(x.id),max:1,quick:'play',buttons:[{label:'Play',v:'play',ok:sl=>sl.length===1}],suggest:()=>{const x=pegChoice(0,2);const pp=pegPoints([...s.seq,x]);return{v:'play',cards:[x],text:`Play the ${cstr(x)}${pp.pts?` for ${pp.pts} (${pp.why.join(', ')})`:''}.`};},auto:()=>({v:'play',cards:[pegChoice(0,2)]})});c=r.cards[0];}
+     else{await T.wait(800);c=pegChoice(cur,T.level);}
+     hands[cur]=hands[cur].filter(x=>x.id!==c.id);p.hand=hands[cur];s.seq.push(c);lastPlayer=cur;const pp=pegPoints(s.seq);
+     T.say(cur,`${sum(s.seq.map(cv))}${pp.pts?`: ${pp.why.join(', ')}`:''}`);add(p,pp.pts);
+     if(sum(s.seq.map(cv))===31){await T.wait(900);s.seq=[];go[0]=go[1]=false;cur=1-cur;continue;}}
+    else if(!go[cur]&&hands[cur].length){go[cur]=true;if(p.human){await T.ask({prompt:'You can\'t play without going over 31.',buttons:[{label:'Say "Go"',v:1}],auto:()=>({v:1})});}else await T.wait(600);T.say(cur,'Go');}
+    if(!canPlay(0)&&!canPlay(1)){await T.wait(700);if(lastPlayer!=null&&sum(s.seq.map(cv))!==31)add(P[lastPlayer],1,'Last card: 1');await T.wait(700);s.seq=[];go[0]=go[1]=false;cur=lastPlayer==null?cur:1-lastPlayer;continue;}
+    cur=1-cur;}
+   if(!winner&&s.seq.length&&sum(s.seq.map(cv))!==31&&lastPlayer!=null){add(P[lastPlayer],1,'Last card: 1');await T.wait(600);}
+   if(winner)break;
+   // show
+   P.forEach((p,i)=>{p.hand=d.slice(i*6,i*6+6).filter(c=>!s.crib.some(x=>x.id===c.id));p.reveal=true;});s.seq=null;T.render();
+   const lines=[];for(const i of [1-s.dealer,s.dealer]){const sc=cribScore(P[i].hand,s.starter,false);lines.push(`<b>${P[i].name}</b> (${P[i].hand.map(cstr).join(' ')}): ${sc.pts}${sc.parts.length?' · '+sc.parts.join(', '):''}`);add(P[i],sc.pts);if(winner)break;}
+   if(!winner){const cs=cribScore(s.crib,s.starter,true);lines.push(`<b>Crib</b> (${P[s.dealer].name}: ${s.crib.map(cstr).join(' ')}): ${cs.pts}${cs.parts.length?' · '+cs.parts.join(', '):''}`);add(P[s.dealer],cs.pts);}
+   if(!winner)await T.modal(`<h3>The count (starter ${cstr(s.starter)})</h3><p>${lines.join('<br>')}</p><p>${P.map(p=>`${p.name}: ${p.score}`).join(' · ')}</p>`,[{label:'Next hand',v:1}]);}
+  await T.over(`<h3>${winner.human?'You win!':winner.name+' wins'}</h3>${P.map(p=>`${p.name}: ${p.score}`).join('<br>')}`);}
+};
+
+/* ===================== POKER (5-card draw, no betting) ===================== */
+function pokerEval(cs){const vals=cs.map(hv).sort((a,b)=>b-a);const cnt={};vals.forEach(v=>cnt[v]=(cnt[v]||0)+1);
+ const groups=Object.entries(cnt).map(([v,c])=>[c,+v]).sort((a,b)=>b[0]-a[0]||b[1]-a[1]);
+ const flush=cs.every(c=>c.s===cs[0].s);let uniq=[...new Set(vals)];let straight=uniq.length===5&&uniq[0]-uniq[4]===4;let high=uniq[0];
+ if(uniq.join()==='14,5,4,3,2'){straight=true;high=5;}
+ let cat,name;if(straight&&flush){cat=8;name=high===14?'Royal flush':'Straight flush';}else if(groups[0][0]===4){cat=7;name='Four of a kind';}else if(groups[0][0]===3&&groups[1][0]===2){cat=6;name='Full house';}
+ else if(flush){cat=5;name='Flush';}else if(straight){cat=4;name='Straight';}else if(groups[0][0]===3){cat=3;name='Three of a kind';}else if(groups[0][0]===2&&groups[1][0]===2){cat=2;name='Two pair';}else if(groups[0][0]===2){cat=1;name=`Pair of ${plural(groups[0][1]===14?1:groups[0][1])}`;}else{cat=0;name=`${rname(high===14?1:high)} high`;}
+ const tb=straight?[high]:groups.map(g=>g[1]);return{cat,name,score:[cat,...tb]};}
+const cmpScore=(a,b)=>{for(let i=0;i<Math.max(a.length,b.length);i++){const d=(a[i]||0)-(b[i]||0);if(d)return d;}return 0;};
+GAMES.poker={name:'Poker',tag:'Five-card draw',min:2,max:4,def:4,styles:{casual:'Like a kitchen-table game: the deal moves around the table, and on your turn you shuffle and deal.',casino:'A dealer handles every deal, and you never shuffle. A button marks whose turn it is to act last.'},
+ blurb:'Five-card draw with betting, played for points on a scoreboard, not chips. Bet, swap up to 3 cards, bet again, and bluff if you dare.',
+ rules:'<p>Everyone starts with <b>1,000 points</b>. Each hand, every player puts in a small <b>ante</b> to build the pot. The ante doubles every 5 hands.</p><p><b>1. Deal:</b> everyone gets 5 cards, face down.</p><p><b>2. First betting round:</b> on your turn you can <b>check</b> (pass, if nobody has bet), <b>bet</b>, <b>call</b> (match the bet), <b>raise</b> (bet more), or <b>fold</b> (drop out of the hand).</p><p><b>3. Draw:</b> swap 0 to 3 cards for new ones.</p><p><b>4. Second betting round:</b> same choices as before.</p><p><b>5. Showdown:</b> everyone still in shows their cards, and the best hand wins the pot. <b>If everyone else folds, you win without showing your cards</b>. That\'s why bluffing works!</p><p><b>Hands, best to worst:</b> Royal flush · Straight flush · Four of a kind · Full house · Flush · Straight · Three of a kind · Two pair · One pair · High card. Suits never break ties. The next highest card does.</p><p>Can\'t cover a bet? You go <b>all in</b> with what you have and can only win what you matched. Run out of points and you\'re out. Last player with points wins, or the leader after 20 hands. The deal moves one seat each hand.</p>',
+ seatInfo(p){const s=this.state;let st=[`${p.score} pts`];if(s.dealer===p.i)st.push(T.style==='casino'?'🔘 Button':'Dealer');if(p.out)return 'Out of points';if(p.folded)st.push('Folded');else if(p.allin)st.push('All in');if(p.rc)st.push(`bet ${p.rc}`);if(p.drew!=null)st.push(p.drew?`drew ${p.drew}`:'stood pat');if(p.reveal&&!p.folded&&p.hand.length===5)st.push(pokerEval(p.hand).name);return st.join(' · ');},
+ youInfo(){const me=T.players[0],s=this.state;if(me.out)return 'You\'re out of points.';const parts=[`Your points: <b>${me.score}</b>`];if(s.dealer===0)parts.push(T.style==='casino'?'You have the button (you act last)':'You\'re the dealer');if(me.hand.length===5)parts.push(`You have: <b>${pokerEval(me.hand).name}</b>`);if(me.folded)parts.push('You folded');return parts.join(' · ');},
+ center(el){const s=this.state;el.append(h('div',{class:'pile'},s.deck&&s.deck.length?cardEl(null):h('div',{class:'slot'}),'Deck'));
+  if(s.pot!=null)el.append(h('div',{class:'cinfo',html:`Pot: <b style="font-size:19px">${s.pot}</b>${s.bet?` · Bet to match: <b>${s.bet}</b>`:''}`}));
+  if(s.phase)el.append(h('div',{class:'cinfo'},s.phase));if(s.msg)el.append(h('div',{class:'cinfo',html:s.msg}));},
+ scoreText(){const s=this.state;return `Hand ${s.handNo||0} of 20 · Ante ${s.ante||10}`;},
+ sortHand:cs=>{const cnt={};cs.forEach(c=>cnt[hv(c)]=(cnt[hv(c)]||0)+1);return cs.sort((a,b)=>(cnt[hv(b)]-cnt[hv(a)])||(hv(b)-hv(a)));},
+ async play(T){const G=this,s=G.state,P=T.players;P.forEach(p=>{p.score=1000;p.out=false;});s.handNo=0;s.dealer=-1;
+  const alive=()=>P.filter(p=>!p.out);
+  const strength=(p,preDraw)=>{const e=pokerEval(p.hand);let v;const top=e.score[1]||0;
+   v=[.08+top/200,.32+top/45,.72,.83,.88,.91,.95,.98,1][e.cat];
+   if(preDraw&&e.cat<4){for(const su of SUITS)if(p.hand.filter(c=>c.s===su).length===4)v+=.14;
+    const vals=[...new Set(p.hand.map(hv))].sort((a,b)=>a-b);for(let i=0;i+3<vals.length;i++)if(vals[i+3]-vals[i]===3)v+=.08;}
+   const opps=P.filter(q=>q!==p&&!q.out&&!q.folded).length;return Math.max(0,Math.min(1,v-.05*(opps-1)));};
+  const drawChoice=(p,lv)=>{const hd=p.hand,e=pokerEval(hd);if(lv===0&&Math.random()<.4)return shuffle(hd).slice(0,R(4));
+   if(e.cat>=4)return[];const cnt={};hd.forEach(c=>cnt[hv(c)]=(cnt[hv(c)]||0)+1);
+   if(e.cat>=1)return hd.filter(c=>cnt[hv(c)]===1).sort((a,b)=>hv(a)-hv(b)).slice(0,3);
+   for(const su of SUITS){const f=hd.filter(c=>c.s===su);if(f.length===4)return hd.filter(c=>c.s!==su);}
+   if(lv===2)for(const c of hd){const rest=hd.filter(x=>x.id!==c.id).map(hv).sort((a,b)=>a-b);if(new Set(rest).size===4&&rest[3]-rest[0]===3)return[c];}
+   return hd.slice().sort((a,b)=>hv(a)-hv(b)).slice(0,3);};
+  // decide: returns {act:'fold'|'check'|'call'|'raise', amt}
+  const decide=(p,lv,preDraw,raisesLeft)=>{const toCall=s.bet-p.rc,st=strength(p,preDraw),odds=toCall/(s.pot+toCall||1);const small=s.ante*2,big=s.ante*5;
+   const canRaise=raisesLeft>0&&p.score>toCall;
+   if(lv===0){if(canRaise&&st>.85&&Math.random()<.5)return{act:'raise',amt:small};if(toCall===0)return{act:'check'};if(st<.2&&toCall>big&&Math.random()<.6)return{act:'fold'};return{act:'call'};}
+   const raiseAt=lv===2?.78:.74,bluff=lv===2?(preDraw?.04:.1):.04;
+   if(canRaise&&st>=raiseAt)return{act:'raise',amt:st>.9?big:small};
+   if(toCall===0){if(canRaise&&Math.random()<bluff)return{act:'raise',amt:small,bluff:true};return{act:'check'};}
+   if(st>odds+(lv===2?.12:.06))return{act:'call'};
+   if(lv===2&&canRaise&&!preDraw&&Math.random()<bluff*.5)return{act:'raise',amt:big,bluff:true};return{act:'fold'};};
+  const adviceText=(p,d,preDraw)=>{const e=pokerEval(p.hand),toCall=s.bet-p.rc;const nm=e.name;
+   if(d.act==='raise')return d.bluff?`You only have ${nm}, but a small bet here can make others fold. A bluff is reasonable.`:`${nm} is a strong hand. ${s.bet?'Raise':'Bet'} to build the pot.`;
+   if(d.act==='call')return `${nm}${preDraw?' (with a chance to improve on the draw)':''} is worth ${toCall} more. Call.`;
+   if(d.act==='check')return `${nm}. Check and see what happens for free.`;return `${nm} probably won't win. Fold and save your points.`;};
+  const put=(p,amt)=>{const a=Math.min(amt,p.score);p.score-=a;p.rc+=a;p.tc+=a;s.pot+=a;if(p.score===0)p.allin=true;return a;};
+  const betRound=async(preDraw)=>{s.bet=0;P.forEach(p=>p.rc=0);let raisesLeft=3;const order=range(P.length).map(k=>(s.dealer+1+k)%P.length).filter(i=>!P[i].out);
+   let needs=new Set(order.filter(i=>!P[i].folded&&!P[i].allin));let idx=0,guard=0;
+   while(needs.size&&guard++<60){const live=P.filter(q=>!q.out&&!q.folded);if(live.length<=1)break;
+    const i=order[idx%order.length];idx++;const p=P[i];if(!needs.has(i))continue;
+    if(live.filter(q=>!q.allin).length===1&&s.bet<=p.rc){needs.delete(i);continue;}
+    T.active=i;T.render();const toCall=s.bet-p.rc;let d;
+    if(p.human){const small=s.ante*2,big=s.ante*5,canR=raisesLeft>0&&p.score>toCall;const btns=[];
+     if(toCall===0)btns.push({label:'Check',v:{act:'check'}});else btns.push({label:p.score<=toCall?`All in (${p.score})`:`Call ${toCall}`,v:{act:'call'}});
+     if(canR){btns.push({label:`${s.bet?'Raise':'Bet'} ${Math.min(small,p.score-toCall)}`,v:{act:'raise',amt:small}});if(p.score-toCall>small)btns.push({label:`${s.bet?'Raise':'Bet'} ${Math.min(big,p.score-toCall)}`,v:{act:'raise',amt:big}});}
+     if(toCall>0)btns.push({label:'Fold',v:{act:'fold'}});
+     const adv=decide(p,2,preDraw,raisesLeft);
+     const r=await T.ask({prompt:toCall?`${toCall} to call. Pot is ${s.pot}.`:`Your move. Pot is ${s.pot}.`,noMain:true,buttons:btns,suggest:()=>({text:adviceText(p,adv,preDraw)}),auto:()=>({v:adv.act==='fold'&&toCall===0?{act:'check'}:(adv.act==='raise'?{act:'raise',amt:adv.amt>=s.ante*5&&p.score-toCall>s.ante*2?s.ante*5:s.ante*2}:{act:adv.act})})});d=r.v;}
+    else{await T.wait(900);d=decide(p,T.level,preDraw,raisesLeft);if(d.act==='fold'&&toCall===0)d={act:'check'};}
+    if(d.act==='fold'){p.folded=true;T.say(i,'Fold');needs.delete(i);}
+    else if(d.act==='check'){T.say(i,'Check');needs.delete(i);}
+    else if(d.act==='call'){const a=put(p,toCall);T.say(i,p.allin?`All in! (${a})`:`Call ${a}`);needs.delete(i);}
+    else{const a=put(p,toCall+d.amt);raisesLeft--;s.bet=Math.max(s.bet,p.rc);T.say(i,p.allin?`All in! (${a})`:`${toCall?'Raise':'Bet'} to ${p.rc}`);needs=new Set(order.filter(j=>j!==i&&!P[j].folded&&!P[j].allin&&!P[j].out));}
+    T.render();await T.wait(450);}
+   T.active=-1;};
+  while(alive().length>1&&s.handNo<20&&!P[0].out){s.handNo++;s.ante=10*2**Math.floor((s.handNo-1)/5);
+   do{s.dealer=(s.dealer+1)%P.length;}while(P[s.dealer].out);P.forEach(p=>{p.hand=[];p.reveal=false;p.drew=null;p.folded=p.out;p.rc=0;});s.pot=null;s.msg='';s.phase='';if(T.style==='casino'){T.dealer=-1;s.phase='The dealer shuffles and deals';T.render();await T.wait(900);}else await T.dealPrompt(s.dealer);
+   s.deck=makeDeck();s.pot=0;s.bet=0;s.msg='';
+   P.forEach(p=>{p.hand=[];p.folded=p.out;p.allin=false;p.rc=0;p.tc=0;p.drew=null;p.reveal=false;});
+   alive().forEach(p=>{put(p,s.ante);p.rc=0;p.hand=s.deck.splice(0,5);});
+   s.phase=`Hand ${s.handNo}: everyone antes ${s.ante}`;T.render();await T.wait(700);
+   s.phase='First betting round';await betRound(true);
+   let live=P.filter(p=>!p.out&&!p.folded);
+   if(live.length>1){s.phase='The draw: swap up to 3 cards';s.bet=0;P.forEach(p=>p.rc=0);T.render();
+    for(const p of live){T.active=p.i;T.render();let toss;
+     if(p.human){const r=await T.ask({prompt:'Pick up to 3 cards to swap, or stand pat.',cards:()=>true,max:3,buttons:[{label:'Swap selected',v:'swap',ok:sl=>sl.length>0},{label:'Stand pat',v:'keep'}],suggest:()=>{const c=drawChoice(p,2);return{v:c.length?'swap':'keep',cards:c,text:c.length?`Swap the ${c.map(cstr).join(', ')}.`:'Stand pat. That\'s a strong hand!'};},auto:()=>{const c=drawChoice(p,2);return{v:c.length?'swap':'keep',cards:c};}});toss=r.v==='keep'?[]:r.cards;}
+     else{await T.wait(800);toss=drawChoice(p,T.level);T.say(p.i,toss.length?`I'll take ${toss.length}`:'I\'m good');}
+     p.hand=p.hand.filter(c=>!toss.some(x=>x.id===c.id)).concat(s.deck.splice(0,toss.length));p.drew=toss.length;if(p.human&&toss.length)T.note(`You drew ${p.hand.slice(-toss.length).map(cstr).join(', ')}.`);T.render();}
+    s.phase='Second betting round';await betRound(false);live=P.filter(p=>!p.out&&!p.folded);}
+   // award pots
+   let summary;
+   if(live.length===1){const w=live[0];w.score+=s.pot;summary=`Everyone else folded. ${w.human?'You win':w.name+' wins'} ${s.pot} without showing ${w.human?'your':'their'} cards.`;}
+   else{live.forEach(p=>p.reveal=true);const ev={};live.forEach(p=>ev[p.i]=pokerEval(p.hand));
+    const levels=[...new Set(P.filter(p=>p.tc>0).map(p=>p.tc))].sort((a,b)=>a-b);let prev=0;const lines=[];let mainWin=null;
+    for(const lvl of levels){const contributors=P.filter(p=>p.tc>=lvl);const amount=(lvl-prev)*contributors.length+P.filter(p=>p.tc>prev&&p.tc<lvl).reduce((a,p)=>a+(p.tc-prev),0);
+     const elig=live.filter(p=>p.tc>=lvl);prev=lvl;if(!elig.length||amount<=0)continue;
+     let best=elig[0];elig.forEach(p=>{if(cmpScore(ev[p.i].score,ev[best.i].score)>0)best=p;});const ws=elig.filter(p=>cmpScore(ev[p.i].score,ev[best.i].score)===0);
+     const share=Math.floor(amount/ws.length);ws.forEach(p=>p.score+=share);ws[0].score+=amount-share*ws.length;if(!mainWin)mainWin=ws;}
+    const ranked=live.slice().sort((a,b)=>cmpScore(ev[b.i].score,ev[a.i].score));const w=mainWin||[ranked[0]];
+    const losers=ranked.filter(p=>!w.includes(p));
+    summary=`${w.map(p=>p.human?'You':p.name).join(' & ')} win${w.length===1&&!w[0].human?'s':''} with <b>${ev[w[0].i].name}</b>.`+(losers.length?` ${ev[w[0].i].name} beats ${losers.map(p=>`${p.human?'your':p.name+'\'s'} ${ev[p.i].name.toLowerCase()}`).join(' and ')}${ev[w[0].i].cat===ev[losers[0].i].cat?' (higher cards break the tie)':''}.`:'');}
+   P.forEach(p=>{if(!p.out&&p.score<=0){p.out=true;p.score=0;}});
+   s.msg=summary;s.pot=0;s.bet=0;s.phase='Showdown';T.render();await T.wait(1500);
+   if(alive().length>1&&s.handNo<20&&!P[0].out)await T.modal(`<h3>Hand ${s.handNo}</h3><p>${summary}</p>${scoreTable([['Player','Hand','Points'],...P.map(p=>[p.name,p.out?'out':(p.folded?'folded':pokerEval(p.hand).name),p.score])])}`,[{label:'Next hand',v:1}]);}
+  const top=Math.max(...P.map(p=>p.score)),w=P.filter(p=>p.score===top);
+  await T.over(`<h3>${P[0].out?'You\'re out of points':w.some(p=>p.human)?'You win!':w.map(p=>p.name).join(' & ')+' wins'}</h3>${scoreTable([['Player','Points'],...P.map(p=>[p.name,p.score])])}<p>${s.handNo>=20?'20 hands played.':''}</p>`);}
+};
+
+/* ===================== BLACKJACK (no betting) ===================== */
+const bjVal=cs=>{let t=0,a=0;cs.forEach(c=>{if(c.r===1){a++;t+=11;}else t+=Math.min(10,c.r);});while(t>21&&a){t-=10;a--;}return{t,soft:a>0};};
+GAMES.blackjack={name:'Blackjack',tag:'Get to 21',min:1,max:4,def:2,playersNote:'Casino play: you plus up to 3 computer players against a house dealer. Casual play needs at least 2 players, since the deal rotates.',
+ styles:{casual:'Like a home game: the deal moves around the table. When it\'s your turn, you deal and play the dealer\'s hand against everyone else.',casino:'A house dealer who never plays deals every hand and must hit until 17. Everyone at the table plays against the dealer.'},
+ blurb:'Get closer to 21 than the dealer without going over. No chips, just wins and losses. Ten hands per game.',
+ rules:'<p>Number cards count their value, face cards count 10, and Aces count 1 or 11.</p><p>You get 2 cards. <b>Hit</b> to take another card, or <b>Stand</b> to stop. Go over 21 and you <b>bust</b>.</p><p><b>Double down:</b> on your first two cards, take exactly one more card and stop. That hand counts twice: a win counts as 2 wins, a loss as 2 losses.</p><p><b>Split:</b> if your first two cards match (two 8s, say), split them into two separate hands and play each one. Split Aces get just one card each.</p><p>The dealer shows one card. After everyone plays, the dealer flips the other and draws. Beat the dealer\'s total (without busting) to win the hand. Ties are a "push."</p><p><b>Casino play:</b> a house dealer must hit until reaching 17. <b>Casual play:</b> the deal rotates around the table. When you\'re the dealer, you play the dealer\'s hand against everyone else, and the usual house rule is to hit until 17, but it\'s your call.</p><p>Play 10 hands and see your record.</p><p>Tip: stand on 17 or more. With 12 to 16, stand if the dealer shows 2 through 6, otherwise hit. Always split Aces and 8s. Double on 11.</p>',
+ sortHand:cs=>cs,
+ seatInfo(p){const s=this.state;const dl=s.di===p.i;const bits=[];if(dl)bits.push('<b>Dealer</b>');if(!dl&&p.hands&&p.hands.length>1)bits.push(p.hands.map(x=>bjVal(x.cards).t+(x.dbl?'×2':'')).join(' / '));else if(p.hand.length&&(!dl||s.showHole))bits.push(bjVal(p.hand).t+(p.hands&&p.hands[0]&&p.hands[0].dbl?' (doubled)':''));if(p.res)bits.push(p.res);return `${bits.join(' · ')}<br>W${p.w} L${p.l} P${p.pu}`;},
+ youSets(){const me=T.players[0];if(!me.hands||me.hands.length<2)return '';return '<span class="clab">Your hands:</span>'+me.hands.map((x,k)=>`<span class="grp">${cardsHTML(x.cards)}</span><b style="color:#1d2433">${bjVal(x.cards).t}${x.dbl?' ×2':''}</b>`).join(' ');},
+ youInfo(){const me=T.players[0],s=this.state;const dl=s.di===0;return me.hand.length?`${dl?'You\'re the dealer · ':''}Your total: <b style="font-size:17px">${bjVal(me.hand).t}</b>${me.res?' · '+me.res:''} · Record W${me.w} L${me.l} P${me.pu}`:'';},
+ center(el){const s=this.state;const dname=s.di==null?'Dealer':(s.di===0?'You (dealer)':T.players[s.di].name+' (dealer)');el.append(h('div',{class:'cinfo'},s.di==null?'House dealer':dname));
+  if(s.di===0){el.append(h('div',{class:'cinfo'},'You\'re dealing. Your cards are below.'));}
+  else{const row=h('div',{class:'mini-row',style:'justify-content:center'});(s.dhand||[]).forEach((c,k)=>row.append(cardEl(k===1&&!s.showHole?null:c)));el.append(row);
+   if(s.dhand&&s.dhand.length)el.append(h('div',{class:'cinfo'},s.showHole?`Dealer: ${bjVal(s.dhand).t}`:`Showing ${Math.min(10,s.dhand[0].r===1?11:s.dhand[0].r)}`));}
+  if(s.msg)el.append(h('div',{class:'cinfo'},s.msg));},
+ scoreText(){return `Hand ${this.state.handNo||0} of 10`;},
+ async play(T){const G=this,s=G.state,P=T.players,casual=T.style!=='casino'&&P.length>=2;P.forEach(p=>{p.w=p.l=p.pu=0;p.reveal=true;p.hand=[];});s.handNo=0;let shoe=[];s.di=casual?R(P.length):null;
+  if(T.style!=='casino'&&P.length<2)T.note('Casual play needs 2 or more players, so a house dealer is dealing.');
+  const draw=()=>{if(shoe.length<30)shoe=makeDeck({copies:4});return shoe.pop();};
+  const basic=(hand,up,lv)=>{const {t,soft}=bjVal(hand),u=up.r===1?11:Math.min(10,up.r);
+   if(lv===0)return t<(14+R(3));if(oops(lv))return t<16;
+   if(soft){if(t<=17)return true;if(t===18)return u>=9;return false;}
+   if(t<=11)return true;if(t===12)return!(u>=4&&u<=6);if(t<=16)return u>=7;return false;};
+  const advise=(cards,up,lv,canDbl,canSplit)=>{const {t,soft}=bjVal(cards),u=up.r===1?11:Math.min(10,up.r);
+   if(lv===0){if(canSplit&&cards[0].r===1)return 'split';return t<(14+R(3))?'hit':'stand';}
+   if(canSplit&&!oops(lv)){const r=cards[0].r===1?11:Math.min(10,cards[0].r);if(r===11||r===8)return 'split';if([2,3,7].includes(r)&&u<=7)return 'split';if(r===6&&u<=6)return 'split';if(r===9&&u!==7&&u<=9)return 'split';if(r===4&&(u===5||u===6))return 'split';}
+   if(canDbl&&!oops(lv)){if(!soft&&t===11&&u<=10)return 'double';if(!soft&&t===10&&u<=9)return 'double';if(!soft&&t===9&&u>=3&&u<=6)return 'double';if(soft&&t>=13&&t<=18&&u>=5&&u<=6)return 'double';}
+   return basic(cards,up,lv)?'hit':'stand';};
+  const why={hit:(t,u)=>`Hit. ${t} is too low against the dealer\'s ${u}.`,stand:(t,u)=>`Stand on ${t}.`,double:(t,u)=>`Double down! ${t} is a great total to take one card against a ${u}.`,split:(t,u)=>`Split them. Two separate hands play better than one ${t}.`};
+  while(s.handNo<10){s.handNo++;s.showHole=false;s.msg='';P.forEach(p=>{p.hand=[];p.hands=null;p.res='';});s.dhand=[];
+   if(casual){s.di=(s.di+1)%P.length;await T.dealPrompt(s.di);}else{T.render();await T.wait(500);}
+   const dealer=casual?P[s.di]:null;const players=P.filter(p=>p!==dealer);const order=casual?range(P.length).map(k=>P[(s.di+1+k)%P.length]).filter(p=>p!==dealer):players;
+   players.forEach(p=>{p.hand=[draw(),draw()];p.reveal=true;});s.dhand=[draw(),draw()];if(dealer){dealer.hand=s.dhand;dealer.reveal=!!dealer.human;}T.render();await T.wait(500);
+   const dealerBJ=bjVal(s.dhand).t===21;
+   players.forEach(p=>{p.hands=[{cards:p.hand,dbl:false,aces:false}];});
+   if(!dealerBJ){for(const p of order){T.active=p.i;
+     for(let hi=0;hi<p.hands.length;hi++){const hd=p.hands[hi];p.hand=hd.cards;if(hd.cards.length<2){hd.cards.push(draw());}T.render();
+      if(hd.aces)continue;
+      while(bjVal(hd.cards).t<21){const first=hd.cards.length===2,canDbl=first,canSplit=first&&p.hands.length===1&&hd.cards[0].r===hd.cards[1].r;let act;
+       const up=s.dhand[0];const ul=rl(up.r);
+       if(p.human){const adv=advise(hd.cards,up,2,canDbl,canSplit);const t=bjVal(hd.cards).t;
+        const btns=[{label:'Hit',v:'hit'},{label:'Stand',v:'stand'}];if(canDbl)btns.push({label:'Double',v:'double'});if(canSplit)btns.push({label:'Split',v:'split'});
+        const r=await T.ask({prompt:`${p.hands.length>1?`Hand ${hi+1}: `:''}You have ${t}. What\'s your move?`,noMain:true,buttons:btns,suggest:()=>({text:why[adv](t,ul)}),auto:()=>({v:adv})});act=r.v;}
+       else{await T.wait(700);act=advise(hd.cards,up,T.level,canDbl,canSplit);T.say(p.i,{hit:'Hit',stand:'Stand',double:'Double down!',split:'Split!'}[act]);}
+       if(act==='stand')break;
+       if(act==='double'){hd.dbl=true;hd.cards.push(draw());T.render();await T.wait(400);break;}
+       if(act==='split'){const c2=hd.cards.pop();const isA=c2.r===1;p.hands.push({cards:[c2],dbl:false,aces:isA});hd.aces=isA;hd.cards.push(draw());T.render();await T.wait(400);if(isA)break;continue;}
+       hd.cards.push(draw());T.render();await T.wait(400);}
+      if(bjVal(hd.cards).t>21)T.say(p.i,'Bust!');T.render();}
+     p.hand=p.hands[0].cards;T.render();}}
+   T.active=dealer?dealer.i:-1;s.showHole=true;if(dealer)dealer.reveal=true;T.render();await T.wait(700);
+   if(players.some(p=>p.hands.some(x=>bjVal(x.cards).t<=21))&&!dealerBJ){
+    if(dealer&&dealer.human){while(bjVal(s.dhand).t<21){const t=bjVal(s.dhand).t;const r=await T.ask({prompt:`You're the dealer with ${t}. Hit or stand?`,buttons:[{label:'Hit',v:true},{label:'Stand',v:false}],suggest:()=>({text:t<17?`The usual house rule: hit until you reach 17. You have ${t}, so hit.`:`You have ${t}. The house rule says stand on 17 or more.`}),auto:()=>({v:t<17})});if(!r.v)break;s.dhand.push(draw());T.render();await T.wait(300);}}
+    else while(bjVal(s.dhand).t<17){s.dhand.push(draw());if(dealer)T.say(dealer.i,'Hit');T.render();await T.wait(600);}}
+   const dt=bjVal(s.dhand).t;const dn=dealer?(dealer.human?'You':dealer.name):'Dealer';s.msg=dealerBJ?`${dn} ${dealer&&dealer.human?'have':'has'} blackjack!`:dt>21?`${dn} bust${dealer&&dealer.human?'':'s'}!`:`${dn} stand${dealer&&dealer.human?'':'s'} on ${dt}`;
+   players.forEach(p=>{const parts=[];p.hands.forEach(x=>{const t=bjVal(x.cards).t,w=x.dbl?2:1,natural=t===21&&x.cards.length===2&&p.hands.length===1;let r;
+     if(t>21)r='L';else if(dealerBJ)r=natural?'P':'L';else if(dt>21||t>dt)r='W';else if(t===dt)r='P';else r='L';
+     if(r==='W'){p.w+=w;if(dealer)dealer.l+=w;parts.push((natural?'Blackjack! Win':'Win')+(w>1?' ×2':''));}else if(r==='P'){p.pu++;if(dealer)dealer.pu++;parts.push('Push');}else{p.l+=w;if(dealer)dealer.w+=w;parts.push((t>21?'Bust':'Lose')+(w>1?' ×2':''));}});
+    p.res=parts.join(', ');});
+   if(dealer)dealer.res=`Dealt: ${players.filter(p=>/Lose|Bust/.test(p.res)&&!/Win/.test(p.res)).length} beaten`;
+   T.active=-1;T.render();await T.wait(1200);
+   const me=P[0];const head=dealer&&dealer.human?`You dealt: ${me.res}`:me.res;
+   if(s.handNo<10)await T.modal(`<h3>Hand ${s.handNo}: ${head}</h3><p>${s.msg}.</p>${scoreTable([['Player','Wins','Losses','Pushes'],...P.map(p=>[p.name+(dealer===p?' (dealer)':''),p.w,p.l,p.pu])])}`,[{label:'Next hand',v:1}]);}
+  const me=P[0];const best=Math.max(...P.map(p=>p.w-p.l));
+  await T.over(`<h3>${casual?(me.w-me.l===best?'You had the best record!':'Good game!'):(me.w>me.l?'You beat the dealer!':me.w===me.l?'Even with the dealer':'The dealer won this time')}</h3>${scoreTable([['Player','Wins','Losses','Pushes'],...P.map(p=>[p.name,p.w,p.l,p.pu])])}`);}
+};
+
+
+/* ===================== SOLITAIRE (Klondike + Pyramid) ===================== */
+GAMES.solitaire={name:'Solitaire',tag:'Klondike or Pyramid',min:1,max:1,playersText:'Just you',playersNote:'A solo game. Pick Klondike or Pyramid after you deal.',
+ blurb:'Two classic solo games: Klondike (build the four suits up from Ace to King) and Pyramid (clear pairs that add up to 13).',
+ rules:'<p><b>Klondike:</b> move every card to the four foundation piles at the top, one suit each, from Ace up to King. In the seven columns, stack cards down in alternating colors (a red 9 on a black 10). Only a King can fill an empty column. Tap the deck to turn over cards. Tap a card to pick it up, then tap where it goes. Tap a picked card again to send it straight to a foundation. Advanced level turns over 3 cards at a time.</p><p><b>Pyramid:</b> remove pairs of cards that add up to <b>13</b> (Jack = 11, Queen = 12, Ace = 1). Kings are 13, so they go on their own. A card can only be used when no cards are covering it. Tap the deck to turn over a new card. Clear the whole pyramid to win.</p>',
+ hideHand:true,noFan:true,
+ center(el){const s=this.state;if(s.mode==='klondike')klondikeView(el,s);else if(s.mode==='pyramid')pyramidView(el,s);},
+ youInfo(){const s=this.state;if(s.mode==='klondike')return `Cards on foundations: <b>${sum(s.found.map(f=>f.length))}</b> of 52 · Moves: ${s.moves}`;if(s.mode==='pyramid')return `Pyramid cards left: <b>${s.pyr.flat().filter(Boolean).length}</b> of 28 · Deck passes left: ${s.passLeft===Infinity?'unlimited':s.passLeft}`;return '';},
+ async play(T){const G=this,s=G.state;
+  const r=await T.ask({prompt:'Which solitaire would you like?',buttons:[{label:'Klondike',v:'klondike'},{label:'Pyramid',v:'pyramid'}],auto:()=>({v:pick(['klondike','pyramid'])})});
+  s.mode=r.v;if(s.mode==='klondike')await klondikePlay(T,s);else await pyramidPlay(T,s);}
+};
+/* ---- Klondike ---- */
+function klDeal(s){const d=makeDeck();s.tab=range(7).map(i=>{const col=d.splice(0,i+1).map(c=>({c,up:false}));col[col.length-1].up=true;return col;});s.stock=d;s.waste=[];s.found=[[],[],[],[]];s.sel=null;s.moves=0;s.recycles=0;}
+const klCanFound=(s,c)=>{const f=s.found[SUITS.indexOf(c.s)];return f.length?f[f.length-1].r===c.r-1:c.r===1;};
+const klCanTab=(s,c,col)=>{const t=s.tab[col];if(!t.length)return c.r===13;const top=t[t.length-1];return top.up&&top.c.r===c.r+1&&isRed(top.c)!==isRed(c);};
+function klSrcCards(s,src){if(src.from==='waste')return s.waste.length?[s.waste[s.waste.length-1]]:[];if(src.from==='found'){const f=s.found[src.k];return f.length?[f[f.length-1]]:[];}return s.tab[src.col].slice(src.idx).map(x=>x.c);}
+function klTake(s,src){if(src.from==='waste')s.waste.pop();else if(src.from==='found')s.found[src.k].pop();else{s.tab[src.col].splice(src.idx);const t=s.tab[src.col];if(t.length&&!t[t.length-1].up)t[t.length-1].up=true;}}
+function klMove(s,src,to){const cs=klSrcCards(s,src);if(!cs.length)return false;
+ if(to.kind==='found'){if(cs.length!==1||!klCanFound(s,cs[0]))return false;klTake(s,src);s.found[SUITS.indexOf(cs[0].s)].push(cs[0]);}
+ else{if(src.from==='tab'&&src.col===to.col)return false;if(!klCanTab(s,cs[0],to.col))return false;klTake(s,src);s.tab[to.col].push(...cs.map(c=>({c,up:true})));}
+ s.moves++;return true;}
+function klDraw(s){const n=T.level===2?3:1;if(s.stock.length){for(let k=0;k<n&&s.stock.length;k++)s.waste.push(s.stock.pop());}else if(s.waste.length){s.stock=s.waste.reverse();s.waste=[];s.recycles++;}s.moves++;}
+function klFindMove(s){// returns {src,to} or {draw:true} or null
+ const tops=[];if(s.waste.length)tops.push({from:'waste'});s.tab.forEach((t,col)=>{if(t.length)tops.push({from:'tab',col,idx:t.length-1});});
+ for(const src of tops){const c=klSrcCards(s,src)[0];if(klCanFound(s,c))return{src,to:{kind:'found'}};}
+ for(let col=0;col<7;col++){const t=s.tab[col];const fi=t.findIndex(x=>x.up);if(fi<0)continue;const c=t[fi].c;
+  for(let to=0;to<7;to++){if(to===col)continue;if(klCanTab(s,c,to)&&!(c.r===13&&fi===0))return{src:{from:'tab',col,idx:fi},to:{kind:'tab',col:to}};}}
+ if(s.waste.length){const c=s.waste[s.waste.length-1];for(let to=0;to<7;to++)if(klCanTab(s,c,to))return{src:{from:'waste'},to:{kind:'tab',col:to}};}
+ if(s.stock.length||s.waste.length)return{draw:true};return null;}
+function klondikeView(el,s){const pd=T.pending;const box=h('div',{class:'sol'});
+ const tapSrc=(src)=>{if(!pd)return;if(s.sel&&!(s.sel.from===src.from&&s.sel.col===src.col&&s.sel.idx===src.idx&&s.sel.k===src.k)){
+   const to=src.from==='tab'?{kind:'tab',col:src.col}:src.from==='found'?{kind:'found'}:null;if(to&&klMove(s,s.sel,to)){s.sel=null;klAfter(s);return;}}
+  if(s.sel&&s.sel.from===src.from&&s.sel.col===src.col&&s.sel.idx===src.idx&&s.sel.k===src.k){if(klMove(s,s.sel,{kind:'found'})){s.sel=null;klAfter(s);return;}s.sel=null;T.render();return;}
+  s.sel=src;T.render();};
+ const top=h('div',{class:'solrow',style:'margin-bottom:10px'});
+ const st=s.stock.length?cardEl(null):h('div',{class:'slot',style:'width:100%;height:calc(var(--cw,46px)*1.4)'});st.classList.add('tap');st.onclick=()=>{if(!pd)return;s.sel=null;klDraw(s);T.render();};top.append(h('div',{},st));
+ const wv=h('div',{class:'solcol'});const ws=s.waste.slice(-3);ws.forEach((c,k)=>{const e=cardEl(c);e.style.left=(k*8)+'px';if(k===ws.length-1){e.classList.add('tap');if(s.sel&&s.sel.from==='waste')e.classList.add('picked');e.onclick=()=>tapSrc({from:'waste'});}wv.append(e);});top.append(wv);
+ top.append(h('div'));
+ s.found.forEach((f,k)=>{const e=f.length?cardEl(f[f.length-1]):h('div',{class:'slot',style:'width:100%;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.5)',html:SUITS[k]});e.classList.add('tap');if(s.sel&&s.sel.from==='found'&&s.sel.k===k)e.classList.add('picked');
+  e.onclick=()=>{if(!pd)return;if(s.sel&&s.sel.from!=='found'){if(klMove(s,s.sel,{kind:'found'})){s.sel=null;klAfter(s);return;}}if(f.length)tapSrc({from:'found',k});};top.append(h('div',{},e));});
+ box.append(top);
+ const tabRow=h('div',{class:'solrow'});const cw=Math.min(46,((el.clientWidth||340)-30)/7);
+ s.tab.forEach((t,col)=>{const ce=h('div',{class:'solcol'});let y=0;
+  if(!t.length){const sl=h('div',{class:'slot',style:'width:100%;height:'+(cw*1.4)+'px'});sl.classList.add('tap');sl.onclick=()=>{if(pd&&s.sel&&klMove(s,s.sel,{kind:'tab',col})){s.sel=null;klAfter(s);}};ce.append(sl);}
+  t.forEach((x,idx)=>{const e=cardEl(x.up?x.c:null);e.style.top=y+'px';y+=x.up?Math.max(16,cw*.5):Math.max(8,cw*.22);
+   if(x.up){e.classList.add('tap');if(s.sel&&s.sel.from==='tab'&&s.sel.col===col&&idx>=s.sel.idx)e.classList.add('picked');e.onclick=()=>tapSrc({from:'tab',col,idx});}ce.append(e);});
+  ce.style.minHeight=(y+cw*1.5)+'px';tabRow.append(ce);});
+ box.append(tabRow);el.append(box);}
+function klAfter(s){T.render();if(sum(s.found.map(f=>f.length))===52)T.resolve('win');}
+async function klondikePlay(T,s){klDeal(s);let stall=0,lastF=0;
+ while(true){T.render();
+  const r=await T.ask({prompt:'Tap a card to pick it up, then tap where it goes. Tap the deck to turn cards.',buttons:[{label:'Auto to foundations',v:'auto'},{label:'New deal',v:'new'}],
+   suggest:()=>{const m=klFindMove(s);if(!m)return{text:'No moves left. Try a new deal.'};if(m.draw)return{text:s.stock.length?'Turn over a card from the deck.':'Flip the waste pile back over to the deck.'};const c=klSrcCards(s,m.src)[0];return{text:`Move the ${cstr(c)} ${m.to.kind==='found'?'to its foundation':'onto column '+(m.to.col+1)}.`};},
+   auto:()=>{const m=klFindMove(s);if(!m||stall>400)return{v:'giveup'};return{v:m};}});
+  if(r.v==='win')break;if(r.v==='giveup')break;if(r.v==='new'){klDeal(s);continue;}
+  if(r.v==='auto'){let moved=true;while(moved){moved=false;const tops=[];if(s.waste.length)tops.push({from:'waste'});s.tab.forEach((t,col)=>{if(t.length)tops.push({from:'tab',col,idx:t.length-1});});for(const src of tops){if(klMove(s,src,{kind:'found'})){moved=true;T.render();await T.wait(150);break;}}}}
+  else if(r.v&&r.v.draw)klDraw(s);else if(r.v&&r.v.src)klMove(s,r.v.src,r.v.to);
+  const f=sum(s.found.map(x=>x.length));if(f>lastF){lastF=f;stall=0;}else stall++;
+  if(f===52)break;}
+ const done=sum(s.found.map(f=>f.length));await T.over(done===52?`<h3>You won!</h3>All 52 cards are home in ${s.moves} moves.`:`<h3>Game over</h3>You got ${done} of 52 cards to the foundations.`);}
+/* ---- Pyramid ---- */
+function pyrDeal(s){const d=makeDeck();s.pyr=range(7).map(r=>d.splice(0,r+1));s.stock=d;s.waste=[];s.sel=null;s.passLeft=[Infinity,2,1][T.level];s.removed=0;s.recycled=false;s.dead=false;}
+const pyrVal=c=>c.r;
+const pyrFree=(s,r,i)=>s.pyr[r][i]&&(r===6||(!s.pyr[r+1][i]&&!s.pyr[r+1][i+1]));
+function pyrAvail(s){const a=[];for(let r=0;r<7;r++)for(let i=0;i<=r;i++)if(pyrFree(s,r,i))a.push({r,i,c:s.pyr[r][i]});if(s.waste.length)a.push({w:true,c:s.waste[s.waste.length-1]});return a;}
+function pyrRemove(s,x){if(x.w)s.waste.pop();else s.pyr[x.r][x.i]=null;s.removed++;}
+function pyrFind(s){const a=pyrAvail(s);const k=a.find(x=>x.c.r===13);if(k)return{pair:[k]};for(let i=0;i<a.length;i++)for(let j=i+1;j<a.length;j++)if(a[i].c.r+a[j].c.r===13)return{pair:[a[i],a[j]]};
+ if(!s.dead&&(s.stock.length||(s.passLeft>0&&s.waste.length)))return{draw:true};return null;}
+function pyrDraw(s){if(s.stock.length)s.waste.push(s.stock.pop());else if(s.passLeft>0&&s.waste.length){if(s.recycled&&s.removed===0){s.dead=true;return;}s.stock=s.waste.reverse();s.waste=[];s.passLeft--;s.recycled=true;s.removed=0;}}
+function pyramidView(el,s){const pd=T.pending;const same=(a,b)=>a&&b&&a.w===b.w&&a.r===b.r&&a.i===b.i;
+ const tap=x=>{if(!pd)return;if(x.c.r===13){pyrRemove(s,x);s.sel=null;pyrAfter(s);return;}
+  if(s.sel&&!same(s.sel,x)){if(s.sel.c.r+x.c.r===13){pyrRemove(s,s.sel);pyrRemove(s,x);s.sel=null;pyrAfter(s);return;}s.sel=x;T.render();return;}
+  s.sel=same(s.sel,x)?null:x;T.render();};
+ const box=h('div',{class:'pyr'});for(let r=0;r<7;r++){const row=h('div',{class:'prow'});for(let i=0;i<=r;i++){const c=s.pyr[r][i];if(!c){row.append(h('div',{class:'card gone'}));continue;}
+   const free=pyrFree(s,r,i);const e=cardEl(c);if(free){e.classList.add('tap');if(same(s.sel,{r,i}))e.classList.add('picked');e.onclick=()=>tap({r,i,c});}else e.classList.add('dimc');row.append(e);}box.append(row);}
+ el.append(box);
+ const st=s.stock.length?cardEl(null):h('div',{class:'slot'});st.classList.add('tap');st.onclick=()=>{if(!pd)return;s.sel=null;pyrDraw(s);pyrAfter(s);};
+ const wt=s.waste.length?cardEl(s.waste[s.waste.length-1]):h('div',{class:'slot'});if(s.waste.length){wt.classList.add('tap');if(s.sel&&s.sel.w)wt.classList.add('picked');wt.onclick=()=>tap({w:true,c:s.waste[s.waste.length-1]});}
+ el.append(h('div',{class:'piles',style:'margin-top:10px'},h('div',{class:'pile'},st,`Deck ${s.stock.length}`),h('div',{class:'pile'},wt,'Turned card')));}
+function pyrAfter(s){T.render();if(!s.pyr.flat().some(Boolean))T.resolve('win');else if(!pyrFind(s))T.resolve('stuck');}
+async function pyramidPlay(T,s){pyrDeal(s);
+ while(true){T.render();
+  const r=await T.ask({prompt:'Tap two cards that add up to 13. Kings go on their own.',buttons:[{label:'New deal',v:'new'}],
+   suggest:()=>{const m=pyrFind(s);if(!m)return{text:'No moves left.'};if(m.draw)return{text:'Turn over a card from the deck.'};return{text:m.pair.length===1?`Remove the King (${cstr(m.pair[0].c)}).`:`Pair the ${cstr(m.pair[0].c)} with the ${cstr(m.pair[1].c)}.`};},
+   auto:()=>{const m=pyrFind(s);return{v:m||'stuck'};}});
+  if(r.v==='win'||r.v==='stuck')break;if(r.v==='new'){pyrDeal(s);continue;}
+  if(r.v.draw)pyrDraw(s);else if(r.v.pair)r.v.pair.forEach(x=>pyrRemove(s,x));
+  if(!s.pyr.flat().some(Boolean)||!pyrFind(s))break;}
+ const left=s.pyr.flat().filter(Boolean).length;await T.over(left===0?'<h3>You cleared the pyramid!</h3>Nicely done.':`<h3>No more moves</h3>You cleared ${28-left} of 28 pyramid cards.`);}
+
+/* ===================== CANASTA (simplified) ===================== */
+const cnWild=c=>c.joker||c.r===2;
+const cnRed3=c=>c.r===3&&isRed(c)&&!c.joker;
+const cnBlack3=c=>c.r===3&&!isRed(c)&&!c.joker;
+const cnVal=c=>c.joker?50:(c.r===2||c.r===1)?20:c.r>=8?10:5;
+const cnCanasta=m=>m.cards.length>=7;
+const cnNatural=m=>!m.cards.some(cnWild);
+GAMES.canasta={name:'Canasta',tag:'Partner rummy',min:4,max:4,playersText:'4 players: you and a partner (across the table) vs. two opponents',
+ blurb:'A partner rummy game with two decks. Build melds of the same rank with your partner, and make canastas (7 cards) for big points.',
+ rules:'<p>Two decks plus 4 Jokers are used. You and your <b>partner</b> (across) share your melds. Everyone gets 11 cards.</p><p><b>Your turn:</b> draw 2 cards from the deck, <b>or</b> take the whole discard pile if you can use its top card (you hold two of that rank, or your team already has that meld). Then make melds, then discard one card.</p><p><b>Melds</b> are 3 or more cards of the same rank. <b>Jokers and 2s are wild</b>: a meld needs at least 2 natural cards and can have up to 3 wilds. 3s can\'t be melded. Red 3s are set aside automatically for 100 points each. Black 3s are good to discard because they block the pile.</p><p><b>First meld:</b> your team\'s first meld of each hand must be worth at least <b>50 points</b> (15 if your score is below zero, 90 once you reach 1,500, 120 at 3,000). You can lay down several sets at once to reach it.</p><p><b>Frozen pile:</b> until your team has melded, or whenever a wild card is in the discard pile, you can only take the pile with a <b>natural pair</b> from your hand that matches the top card.</p><p>A meld of 7 or more cards is a <b>canasta</b>: 500 if it has no wilds, 300 if it does. Your team needs at least one canasta before anyone can <b>go out</b> by using up all their cards (worth 100).</p><p><b>Card points:</b> Joker 50, 2 and A 20, 8 to K 10, 4 to 7 and black 3 5. Melded cards count for you, cards left in hand count against you. First team to <b>2500</b> wins.</p>',
+ sortHand:cs=>cs.sort((a,b)=>(cnWild(a)-cnWild(b))||(hv(a)-hv(b))),
+ seatInfo(p){return `${p.hand.length} cards`;},
+ meldHTML(t){const ms=this.state.melds[t];if(!ms.length)return '<span>none yet</span>';return ms.map(m=>`<span class="grp" title="${m.cards.length}">${cardEl(m.cards.find(c=>!cnWild(c))||m.cards[0],{cls:'xs'}).outerHTML}<b style="font-size:12px;color:#1d2433;margin:0 3px">×${m.cards.length}${cnCanasta(m)?(cnNatural(m)?' ★':' ☆'):''}</b></span>`).join('');},
+ youSets(){const s=this.state;const need=s.melds[0].length?'':`<span>First meld needs <b>${s.team[0]<0?15:s.team[0]<1500?50:s.team[0]<3000?90:120}</b> points</span>`;return `<span class="clab">Your team\'s melds:</span>${this.meldHTML(0)}${s.red3[0]?`<span>Red 3s: ${s.red3[0]}</span>`:''}${need}${s.pile.some(cnWild)?'<span>❄️ Pile is frozen</span>':''}`;},
+ center(el){const s=this.state;el.append(h('div',{class:'piles'},h('div',{class:'pile'},s.stock.length?cardEl(null):h('div',{class:'slot'}),`Deck ${s.stock.length}`),h('div',{class:'pile'},s.pile.length?cardEl(s.pile[s.pile.length-1]):h('div',{class:'slot'}),`Pile ${s.pile.length}`)));
+  el.append(h('div',{class:'cinfo',style:'color:#fff',html:`${teamName(1)}\'s melds: ${this.meldHTML(1)}${s.red3[1]?` · Red 3s: ${s.red3[1]}`:''}`}));if(s.msg)el.append(h('div',{class:'cinfo'},s.msg));},
+ scoreText(){const t=this.state.team;return t?`${teamName(0)}: ${t[0]} · ${teamName(1)}: ${t[1]} · to 2500`:'';},
+ async play(T){const G=this,s=G.state,P=T.players;s.team=[0,0];let dealer=3;
+  while(Math.max(...s.team)<2500){dealer=(dealer+1)%4;s.stock=[];s.melds=[[],[]];s.red3=[0,0];s.pile=[];s.msg='';P.forEach(p=>p.hand=[]);await T.dealPrompt(dealer);const d=makeDeck({copies:2,jokers:4});s.stock=d;
+   const drawOne=(p)=>{while(s.stock.length){const c=s.stock.pop();if(cnRed3(c)){s.red3[p.i%2]++;if(!T.auto)T.say(p.i,'Red 3! +100');continue;}return c;}return null;};
+   P.forEach(p=>{p.hand=[];for(let k=0;k<11;k++){const c=drawOne(p);if(c)p.hand.push(c);}});
+   let top;do{top=s.stock.pop();if(cnRed3(top)||cnWild(top)){s.stock.splice(R(s.stock.length),0,top);top=null;}}while(!top);s.pile=[top];
+   const team=p=>p.i%2,hasCan=t=>s.melds[t].some(cnCanasta);
+   const meldOf=(t,r)=>s.melds[t].find(m=>m.r===r);
+   const minLeft=p=>hasCan(team(p))?0:2;
+   const minNeed=t=>s.team[t]<0?15:s.team[t]<1500?50:s.team[t]<3000?90:120;
+   const opened=t=>s.melds[t].length>0;
+   const groupsFrom=cs=>{const nat=cs.filter(c=>!cnWild(c)),wl=cs.filter(cnWild);const by={};for(const c of nat){if(c.r===3)return null;(by[c.r]=by[c.r]||[]).push(c);}const gs=Object.values(by).map(g=>g.slice());if(!gs.length||gs.some(g=>g.length<2))return null;
+    let wi=0;for(const g of gs)while(g.length<3&&wi<wl.length)g.push(wl[wi++]);for(const g of gs)while(wi<wl.length&&g.filter(cnWild).length<3&&g.filter(c=>!cnWild(c)).length>g.filter(cnWild).length)g.push(wl[wi++]);
+    if(wi<wl.length||gs.some(g=>g.length<3||g.filter(cnWild).length>3))return null;return gs;};
+   const gval=gs=>sum(gs.flat().map(cnVal));
+   const planOpen=(hand,keep,skipRank)=>{const by={};hand.filter(c=>!cnWild(c)&&c.r!==3&&c.r!==skipRank).forEach(c=>(by[c.r]=by[c.r]||[]).push(c));const wl=hand.filter(cnWild);let picked=[];
+    Object.values(by).filter(g=>g.length>=3).forEach(g=>picked.push(...g));let wi=0;Object.values(by).filter(g=>g.length===2).sort((a,b)=>cnVal(b[0])-cnVal(a[0])).forEach(g=>{if(wi<wl.length)picked.push(...g,wl[wi++]);});
+    if(!picked.length||hand.length-picked.length<keep)return{cards:[],groups:[],value:0};const gs=groupsFrom(picked);return gs?{cards:picked,groups:gs,value:gval(gs)}:{cards:[],groups:[],value:0};};
+   const frozen=p=>!opened(team(p))||s.pile.some(cnWild);
+   const canTake=p=>{const t=s.pile[s.pile.length-1];if(!t||cnWild(t)||cnBlack3(t)||t.r===3)return false;const nat=p.hand.filter(c=>!cnWild(c)&&c.r===t.r);
+    if(frozen(p)){if(nat.length<2)return false;if(opened(team(p)))return true;const two=nat.slice(0,2),rest=p.hand.filter(c=>!two.some(x=>x.id===c.id));const pl=planOpen(rest,minLeft(p),t.r);return cnVal(t)+cnVal(two[0])+cnVal(two[1])+pl.value>=minNeed(team(p));}
+    return nat.length>=2||!!meldOf(team(p),t.r);};
+   const validOpen=(p,cs)=>{const gs=groupsFrom(cs);return !!gs&&gval(gs)>=minNeed(team(p))&&p.hand.length-cs.length>=minLeft(p);};
+   const validNew=(p,cs)=>{if(!opened(team(p)))return validOpen(p,cs);if(cs.length<3)return false;const nat=cs.filter(c=>!cnWild(c)),w=cs.length-nat.length;if(nat.length<2||w>3)return false;if(nat.some(c=>c.r===3))return false;if(!nat.every(c=>c.r===nat[0].r))return false;if(meldOf(team(p),nat[0].r))return false;return p.hand.length-cs.length>=minLeft(p);};
+   const addTarget=(p,cs)=>{if(!cs.length)return null;const nat=cs.filter(c=>!cnWild(c)),w=cs.length-nat.length;let m;
+    if(nat.length){if(!nat.every(c=>c.r===nat[0].r))return null;m=meldOf(team(p),nat[0].r);}else m=s.melds[team(p)].filter(x=>x.cards.filter(cnWild).length+w<=3).sort((a,b)=>b.cards.length-a.cards.length)[0];
+    if(!m)return null;if(m.cards.filter(cnWild).length+w>3)return null;if(p.hand.length-cs.length<minLeft(p))return null;return m;};
+   const doNew=(p,cs)=>{const gs=opened(team(p))?[cs]:groupsFrom(cs);gs.forEach(g=>{const nat=g.filter(c=>!cnWild(c));s.melds[team(p)].push({r:nat[0].r,cards:g.slice()});});p.hand=p.hand.filter(c=>!cs.some(x=>x.id===c.id));};
+   const doAdd=(p,cs,m)=>{m.cards.push(...cs);p.hand=p.hand.filter(c=>!cs.some(x=>x.id===c.id));};
+   const takePile=p=>{const wasOpen=opened(team(p));const t=s.pile.pop();const m=meldOf(team(p),t.r);
+    if(m&&!frozen(p))m.cards.push(t);else{const two=p.hand.filter(c=>!cnWild(c)&&c.r===t.r).slice(0,2);p.hand=p.hand.filter(c=>!two.some(x=>x.id===c.id));if(m)m.cards.push(t,...two);else s.melds[team(p)].push({r:t.r,cards:[t,...two]});
+     if(!wasOpen){const pl=planOpen(p.hand,minLeft(p),t.r);if(pl.groups.length){pl.groups.forEach(g=>{const nat=g.filter(c=>!cnWild(c));s.melds[team(p)].push({r:nat[0].r,cards:g.slice()});});p.hand=p.hand.filter(c=>!pl.cards.some(x=>x.id===c.id));}}}
+    p.hand.push(...s.pile);s.pile=[];};
+   const discardOK=(p,c)=>p.hand.length>1||hasCan(team(p));
+   // AI pieces
+   const aiMeld=(p,lv)=>{if(!opened(team(p))){const pl=planOpen(p.hand,minLeft(p));if(pl.value>=minNeed(team(p))&&(lv>0||Math.random()<.7))doNew(p,pl.cards);else return;}
+    let acted=true,guard=0;while(acted&&guard++<30){acted=false;
+     for(const m of s.melds[team(p)]){const nat=p.hand.filter(c=>!cnWild(c)&&c.r===m.r);if(nat.length&&p.hand.length-nat.length>=minLeft(p)){doAdd(p,nat,m);acted=true;}}
+     const by={};p.hand.filter(c=>!cnWild(c)&&c.r!==3).forEach(c=>(by[c.r]=by[c.r]||[]).push(c));
+     for(const r in by){const g=by[r];if(g.length>=3&&!meldOf(team(p),+r)&&p.hand.length-g.length>=minLeft(p)){doNew(p,g);acted=true;break;}
+      if(lv>=1&&g.length===2&&!meldOf(team(p),+r)){const w=p.hand.find(cnWild);if(w&&p.hand.length-3>=minLeft(p)&&(lv===2||Math.random()<.5)){doNew(p,[...g,w]);acted=true;break;}}}
+     if(lv>=1){const w=p.hand.find(cnWild);if(w){const m=s.melds[team(p)].filter(x=>x.cards.length>=5&&x.cards.length<7&&x.cards.filter(cnWild).length<3)[0];if(m&&p.hand.length-1>=minLeft(p)){doAdd(p,[w],m);acted=true;}}}}};
+   const aiDiscard=(p,lv)=>{const hd=p.hand;if(lv===0&&Math.random()<.4){const non=hd.filter(c=>!cnWild(c));return pick(non.length?non:hd);}
+    const b3=hd.find(cnBlack3);if(b3)return b3;const cnt={};hd.forEach(c=>{if(!cnWild(c))cnt[c.r]=(cnt[c.r]||0)+1;});
+    const cand=hd.filter(c=>!cnWild(c)).sort((a,b)=>(cnt[a.r]-cnt[b.r])||((meldOf(1-team(p),a.r)?1:0)-(meldOf(1-team(p),b.r)?1:0))||(cnVal(a)-cnVal(b)));return cand[0]||hd[0];};
+   let cur=(dealer+1)%4,out=null,guard=0;
+   while(!out&&guard++<400){const p=P[cur];T.active=cur;T.render();
+    // draw
+    let took=false;
+    if(!s.stock.length&&!canTake(p))break;
+    if(p.human){const r=await T.ask({prompt:s.stock.length?'Draw 2 cards, or take the discard pile.':'The deck is empty. Take the pile to keep going.',buttons:[{label:'Draw 2',v:'draw',ok:()=>s.stock.length>0},{label:`Take the pile (${s.pile.length})`,v:'take',ok:()=>canTake(p)}],suggest:()=>({text:canTake(p)?`Take the pile. You can meld the ${cstr(s.pile[s.pile.length-1])} and get ${s.pile.length-1} more cards.`:'Draw 2. You can\'t use the top of the pile.'}),auto:()=>({v:canTake(p)?'take':'draw'})});took=r.v==='take';}
+    else{await T.wait(800);took=canTake(p)&&(T.level>0?s.pile.length>=2||true:Math.random()<.5);}
+    if(took){takePile(p);T.say(cur,'Takes the pile!');}else{if(!s.stock.length)break;for(let k=0;k<2;k++){const c=drawOne(p);if(c){p.hand.push(c);if(p.human)T.note(`You drew the ${cstr(c)}.`);}}if(!p.human)T.say(cur,'Draws 2');}
+    T.render();
+    // meld + discard
+    if(p.human){while(true){if(!p.hand.length&&hasCan(team(p))){out=p;break;}
+      const r=await T.ask({prompt:opened(team(p))?'Meld cards (select them, then tap a button), then discard one.':`First meld: your team needs ${minNeed(team(p))} points. Select one or more sets, then tap Meld new. Or just discard.`,cards:()=>true,max:20,
+       buttons:[{label:'Meld new',v:'new',ok:sl=>validNew(p,sl)},{label:'Add to meld',v:'add',ok:sl=>!!addTarget(p,sl)},{label:'Discard',v:'disc',ok:sl=>sl.length===1&&discardOK(p,sl[0])}],
+       suggest:()=>{if(!opened(team(p))){const pl=planOpen(p.hand,minLeft(p));if(pl.value>=minNeed(team(p)))return{v:'new',cards:pl.cards,text:`You can open! These sets are worth ${pl.value}, and your team needs ${minNeed(team(p))}.`};const dc=aiDiscard(p,2);return{v:'disc',cards:[dc],text:`Your team needs ${minNeed(team(p))} points to make its first meld, and you don\'t have enough yet. Discard the ${cstr(dc)}.`};}
+        const cl={hand:p.hand.slice(),i:p.i};const by={};p.hand.filter(c=>!cnWild(c)&&c.r!==3).forEach(c=>(by[c.r]=by[c.r]||[]).push(c));
+        for(const m of s.melds[team(p)]){const nat=p.hand.filter(c=>!cnWild(c)&&c.r===m.r);if(nat.length&&addTarget(p,nat))return{v:'add',cards:nat,text:`Add your ${plural(m.r)} to your team\'s meld.`};}
+        for(const r in by)if(by[r].length>=3&&validNew(p,by[r]))return{v:'new',cards:by[r],text:`Meld your ${plural(+r)}.`};
+        const dc=aiDiscard(p,2);return{v:'disc',cards:[dc],text:`Discard the ${cstr(dc)}.`};},
+       auto:()=>{if(!opened(team(p))){const pl=planOpen(p.hand,minLeft(p));if(pl.value>=minNeed(team(p)))return{v:'new',cards:pl.cards};return{v:'disc',cards:[aiDiscard(p,2)]};}
+        const by={};p.hand.filter(c=>!cnWild(c)&&c.r!==3).forEach(c=>(by[c.r]=by[c.r]||[]).push(c));
+        for(const m of s.melds[team(p)]){const nat=p.hand.filter(c=>!cnWild(c)&&c.r===m.r);if(nat.length&&addTarget(p,nat))return{v:'add',cards:nat};}
+        for(const r in by)if(by[r].length>=3&&validNew(p,by[r]))return{v:'new',cards:by[r]};const dc=aiDiscard(p,2);return{v:'disc',cards:[dc]};}});
+      if(r.v==='new')doNew(p,r.cards);else if(r.v==='add')doAdd(p,r.cards,addTarget(p,r.cards));else{const c=r.cards[0];p.hand=p.hand.filter(x=>x.id!==c.id);s.pile.push(c);if(!p.hand.length)out=p;break;}
+      T.render();}}
+    else{await T.wait(600);aiMeld(p,T.level);T.render();if(!p.hand.length&&hasCan(team(p)))out=p;else{await T.wait(500);const c=aiDiscard(p,T.level);p.hand=p.hand.filter(x=>x.id!==c.id);s.pile.push(c);T.say(cur,`Discards ${cstr(c)}`);if(!p.hand.length)out=p;}}
+    T.render();cur=(cur+1)%4;}
+   const rows=[['','Melds','Canastas','Red 3s','Going out','In hand','Total']];
+   for(const t of [0,1]){const ms=s.melds[t];const mv=sum(ms.map(m=>sum(m.cards.map(cnVal))));const cb=sum(ms.map(m=>cnCanasta(m)?(cnNatural(m)?500:300):0));const r3=s.red3[t]*(ms.length?100:-100);const go=out&&team(out)===t?100:0;const inHand=sum([P[t],P[t+2]].map(p=>sum(p.hand.map(cnVal))));
+    const tot=mv+cb+r3+go-inHand;s.team[t]+=tot;rows.push([teamName(t),mv,cb,r3,go,-inHand,tot]);}
+   const why=out?`${out.human?'You':out.name} went out!`:'The deck ran out.';
+   if(Math.max(...s.team)<2500)await T.modal(`<h3>Hand over</h3><p>${why}</p>${scoreTable(rows)}<p>${teamName(0)}: ${s.team[0]} · ${teamName(1)}: ${s.team[1]}</p>`,[{label:'Next hand',v:1}]);}
+  const win=s.team[0]>=s.team[1]?0:1;await T.over(`<h3>${win===0?`You and ${T.players[2].name} win!`:`${teamName(1)} win`}</h3>${teamName(0)}: ${s.team[0]}<br>${teamName(1)}: ${s.team[1]}`);}
+};
+
+renderMenu();
+
+</script>
+</body>
+</html>
