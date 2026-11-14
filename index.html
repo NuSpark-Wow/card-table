@@ -310,13 +310,37 @@ function renderInner(){const G=T.G,P=T.players,n=P.length;
    if(ok)e.onclick=()=>handTap(c);hand.append(e);});}
  const bb=$('#ybtns');bb.innerHTML='';
  if(pd){(pd.buttons||[]).forEach((b,i)=>{const en=!b.ok||b.ok(T.sel);bb.append(h('button',{class:'yb'+(i===0&&pd.buttons.length<=3&&!pd.noMain?' main':''),onclick:()=>{if(en)T.resolve(b.v);},...(en?{}:{disabled:'disabled'}),html:b.label}));});
-  if(pd.suggest)bb.append(h('button',{class:'yb hint',onclick:showHint},'💡 Hint'));}
+  if(pd.suggest)bb.append(h('button',{class:'yb hint',onclick:showHint},'💡 Hint'));
+  if(pd.suggest)bb.append(h('button',{class:'yb hint pfmb',onclick:playForMe},'🤖 Play for me'));}
 }
 function defaultSort(cs){return cs.sort((a,b)=>(SUITS.indexOf(a.s)-SUITS.indexOf(b.s))||(hv(a)-hv(b)));}
 function handTap(c){const pd=T.pending;if(!pd)return;const max=pd.max??1,i=T.sel.findIndex(x=>x.id===c.id);
  if(i>=0){if(max===1&&pd.quick){T.resolve(pd.quick);return;}T.sel.splice(i,1);}
  else{if(max===1)T.sel=[c];else if(T.sel.length<max)T.sel.push(c);}
  if(pd.onSel)pd.onSel(T.sel);T.render();}
+/* ---------- Play for me ---------- */
+function pfmBox(){let b=document.getElementById('pfm');if(b)return b;b=document.createElement('div');b.id='pfm';b.innerHTML='<div class="pfm-card"><div class="pfm-h">🤖 I played for you</div><div class="pfm-b" id="pfmBody"></div><button class="btn primary" id="pfmOk">Got it, keep playing</button><div class="pfm-n">The game is paused until you tap the button.</div></div>';document.body.append(b);
+ const st=document.createElement('style');st.textContent='#pfm{position:fixed;inset:0;z-index:9999;display:none;align-items:flex-start;justify-content:center;padding:70px 14px 14px;background:rgba(10,15,25,.35)}#pfm .pfm-card{background:#fff;color:#1d2433;max-width:440px;width:100%;border-radius:16px;padding:16px 18px;box-shadow:0 12px 30px rgba(0,0,0,.35);border-top:6px solid #c99a2e;font-size:16px;line-height:1.45}#pfm .pfm-h{font-weight:800;font-size:19px;margin-bottom:8px}#pfm .pfm-b p{margin:6px 0}#pfm .pfm-b b{color:#1f2a44}#pfm .btn{margin-top:10px;width:100%;font-size:17px;padding:10px}#pfm .pfm-n{font-size:12px;color:#6b7280;text-align:center;margin-top:6px}';document.head.append(st);
+ b.querySelector('#pfmOk').onclick=()=>{b.style.display='none';setPaused(false);};return b;}
+function pfmShow(idea,why){const b=pfmBox();const esc=t=>String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
+ b.querySelector('#pfmBody').innerHTML=(idea?`<p><b>The play:</b> ${esc(idea)}</p>`:'')+(why?`<p><b>Why:</b> ${esc(why)}</p>`:'')+(!idea&&!why?'<p>I made the best move I could find for you.</p>':'');
+ setPaused(true);b.style.display='flex';}
+
+function playForMe(){const pd=T.pending;if(!pd)return;const s=pd.suggest?pd.suggest():null;const a=(s&&s.v!==undefined)?s:(pd.auto?pd.auto():null);
+ if(!a||a.v===undefined){showHint();return;}T.sel=(a.cards||[]).slice();T.resolve(a.v);pfmShow(s&&s.text,s&&s.why);}
+const pfmSameCol=(a,b)=>((a==='♥'||a==='♦')===(b==='♥'||b==='♦'));
+function trickWhy(c,legal){const s=T.G&&T.G.state;if(!s||!s.trick)return '';if(legal.length===1)return 'It was the only card you were allowed to play.';
+ const tr=s.trump||(T.gid==='spades'?'♠':null),isTr=x=>!!tr&&(x.s===tr||(T.gid==='euchre'&&x.r===11&&pfmSameCol(x.s,tr)));const t=s.trick;
+ if(!t.length){if(T.gid==='hearts')return c.s==='♥'?'Hearts are open, and a low heart usually gets beaten by someone else, so you avoid taking points.':'Leading a low card makes it likely someone else wins the trick, which keeps hearts and the Queen of Spades away from you.';
+  return hv(c)>=13||isTr(c)?'You are leading, and a strong card like this has a good chance to win the trick.':'Leading a lower card keeps your strong cards for later in the hand.';}
+ const lead=t[0].c,ls=isTr(lead)?tr:lead.s,inLead=x=>isTr(lead)?isTr(x):(x.s===ls&&!isTr(x));
+ if(inLead(c)){const hi=Math.max(...t.filter(x=>inLead(x.c)).map(x=>hv(x.c))),trumped=!isTr(lead)&&t.some(x=>isTr(x.c));
+  if(T.gid==='hearts')return hv(c)>hi?'You had to follow suit, and there were no points to worry about, so taking this trick is safe.':'You had to follow suit, so you play under the high card and let someone else take the trick.';
+  if(hv(c)>hi&&!trumped)return 'You had to follow suit, and this card beats everything played so far.';
+  return 'You had to follow suit but couldn\'t win this trick cheaply, so you play low and save your good cards.';}
+ if(isTr(c))return 'You\'re out of the suit that was led, so you play a trump card to try to win the trick.';
+ if(T.gid==='hearts'&&(c.s==='♥'||(c.s==='♠'&&c.r===12)))return 'You\'re out of the suit that was led, so it\'s a great time to hand a penalty card to someone else.';
+ return 'You\'re out of the suit that was led, so you throw away a card you don\'t need.';}
 function showHint(){const pd=T.pending;if(!pd||!pd.suggest)return;const s=pd.suggest();T.sugg=new Set((s.cards||[]).map(c=>c.id));T.msg='💡 '+(s.text||'Try that.');T.render();}
 T.over=async(html)=>{T.active=-1;T.render();const v=await T.modal(html,[{label:'Play again',v:'again'},{label:'Choose another game',v:'menu'}]);if(v==='again')startGame(T.gid,T.n,T.level);else showMenu();};
 
@@ -356,7 +380,7 @@ window.addEventListener('resize',()=>T.render());
 /* ---------- shared bits ---------- */
 async function humanPlay(T,p,legal,aiFn,prompt){
  if(p.human){const ids=new Set(legal.map(c=>c.id));
-  const r=await T.ask({prompt,cards:c=>ids.has(c.id),max:1,quick:'play',buttons:[{label:'Play',v:'play',ok:s=>s.length===1}],suggest:()=>{const c=aiFn(2);return{v:'play',cards:[c],text:`Play the ${cstr(c)}.`};},auto:()=>({v:'play',cards:[aiFn(2)]})});
+  const r=await T.ask({prompt,cards:c=>ids.has(c.id),max:1,quick:'play',buttons:[{label:'Play',v:'play',ok:s=>s.length===1}],suggest:()=>{const c=aiFn(2);return{v:'play',cards:[c],text:`Play the ${cstr(c)}.`,why:trickWhy(c,legal)};},auto:()=>({v:'play',cards:[aiFn(2)]})});
   return r.cards[0];}
  await T.wait(700);return aiFn(T.level);}
 function trickView(trick,n){const el=h('div',{class:'trick'});trick.forEach(({p,c})=>{const e=cardEl(c);e.classList.add('t-'+seatPos(p,n));el.append(e);});return el;}
@@ -488,7 +512,7 @@ GAMES.crazy8={name:'Crazy Eights',tag:'Match suit or number',min:2,max:4,def:3,
   while(guard++<1500){const p=P[cur];T.active=cur;T.render();let played=null;
    if(p.human){while(true){refill();const any=p.hand.some(playable);
      const r=await T.ask({prompt:any?'Play a matching card, or draw.':'No match. Draw a card.',cards:playable,max:1,quick:'play',buttons:[{label:'Play',v:'play',ok:sl=>sl.length===1},...(s.stock.length?[{label:'Draw',v:'draw'}]:[{label:'Pass',v:'pass',ok:()=>!any}])],
-      suggest:()=>{const c=aiPick(p,2);return c?{v:'play',cards:[c],text:`Play the ${cstr(c)}.`}:{v:'draw',text:'Nothing matches. Draw a card.'};},auto:()=>{const c=aiPick(p,2);return c?{v:'play',cards:[c]}:{v:s.stock.length?'draw':'pass'};}});
+      suggest:()=>{const c=aiPick(p,2);return c?{v:'play',cards:[c],text:`Play the ${cstr(c)}.`,why:c.r===8?'Eights are wild, so you can play one on anything and pick the next suit.':c.s===s.suit?'It matches the suit on the pile, and it\'s from the suit you hold the most of, so you\'ll have more matches later.':'It matches the number on the pile.'}:{v:'draw',text:'Nothing matches. Draw a card.',why:'No card in your hand matches the suit or number on the pile.'};},auto:()=>{const c=aiPick(p,2);return c?{v:'play',cards:[c]}:{v:s.stock.length?'draw':'pass'};}});
      if(r.v==='play'){played=r.cards[0];break;}if(r.v==='pass')break;const c=s.stock.pop();p.hand.push(c);T.note(`You drew the ${cstr(c)}.`);}}
    else{await T.wait(800);while(true){refill();played=aiPick(p,T.level);if(played||!s.stock.length)break;p.hand.push(s.stock.pop());T.say(p.i,'Draws a card');T.render();await T.wait(450);}if(!played)T.say(p.i,'Pass');}
    if(played){p.hand=p.hand.filter(c=>c.id!==played.id);disc.push(played);s.top=played;s.suit=played.s;
