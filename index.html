@@ -1142,7 +1142,15 @@ function klFindMove(s){// returns {src,to} or {draw:true} or null
  for(let col=0;col<7;col++){const t=s.tab[col];const fi=t.findIndex(x=>x.up);if(fi<0)continue;const c=t[fi].c;
   for(let to=0;to<7;to++){if(to===col)continue;if(klCanTab(s,c,to)&&!(c.r===13&&fi===0))return{src:{from:'tab',col,idx:fi},to:{kind:'tab',col:to}};}}
  if(s.waste.length){const c=s.waste[s.waste.length-1];for(let to=0;to<7;to++)if(klCanTab(s,c,to))return{src:{from:'waste'},to:{kind:'tab',col:to}};}
- if(s.stock.length||s.waste.length)return{draw:true};return null;}
+ for(let col=0;col<7;col++){const t=s.tab[col];for(let idx=1;idx<t.length;idx++){if(!t[idx].up||!t[idx-1].up||!klCanFound(s,t[idx-1].c))continue;
+   for(let to=0;to<7;to++)if(to!==col&&klCanTab(s,t[idx].c,to))return{src:{from:'tab',col,idx},to:{kind:'tab',col:to}};}}
+ if((s.stock.length||s.waste.length)&&klDeckHasPlay(s))return{draw:true};return null;}
+function klDeckHasPlay(s){// would turning through the deck ever give a playable card?
+ const n=T.level===2?3:1;let st=s.stock.slice(),wa=s.waste.slice();const lim=2*(st.length+wa.length)+4;
+ for(let k=0;k<lim;k++){
+  if(st.length){for(let j=0;j<n&&st.length;j++)wa.push(st.pop());}else if(wa.length){st=wa.reverse();wa=[];continue;}else return false;
+  const c=wa[wa.length-1];if(c&&(klCanFound(s,c)||[0,1,2,3,4,5,6].some(to=>klCanTab(s,c,to))))return true;}
+ return false;}
 function klondikeView(el,s){const pd=T.pending;const box=h('div',{class:'sol'});
  const tapSrc=(src)=>{if(!pd)return;if(s.sel&&!(s.sel.from===src.from&&s.sel.col===src.col&&s.sel.idx===src.idx&&s.sel.k===src.k)){
    const to=src.from==='tab'?{kind:'tab',col:src.col}:src.from==='found'?{kind:'found'}:null;if(to&&klMove(s,s.sel,to)){s.sel=null;klAfter(s);return;}}
@@ -1165,15 +1173,16 @@ function klondikeView(el,s){const pd=T.pending;const box=h('div',{class:'sol'});
 function klAfter(s){T.render();if(sum(s.found.map(f=>f.length))===52)T.resolve('win');}
 async function klondikePlay(T,s){klDeal(s);let stall=0,lastF=0;
  while(true){T.render();
+  if(!klFindMove(s)&&!T.auto){const done=sum(s.found.map(f=>f.length));await T.over(`<h3>No more moves</h3><p>You got <b>${done} of 52</b> cards to the foundations. There are no moves left in this deal, not even in the deck.</p><p>Play again?</p>`);return;}
   const r=await T.ask({prompt:'Tap a card to pick it up, then tap where it goes. Tap the deck to turn cards.',buttons:[{label:'Auto to foundations',v:'auto'},{label:'New deal',v:'new'}],
-   suggest:()=>{const m=klFindMove(s);if(!m)return{text:'No moves left. Try a new deal.'};if(m.draw)return{text:s.stock.length?'Turn over a card from the deck.':'Flip the waste pile back over to the deck.'};const c=klSrcCards(s,m.src)[0];return{text:`Move the ${cstr(c)} ${m.to.kind==='found'?'to its foundation':'onto column '+(m.to.col+1)}.`};},
+   suggest:()=>{const m=klFindMove(s);if(!m)return{text:'No more moves left in this deal. Tap New deal to play again.'};if(m.draw)return{text:s.stock.length?'Turn over a card from the deck.':'Flip the waste pile back over to the deck.'};const c=klSrcCards(s,m.src)[0];return{text:`Move the ${cstr(c)} ${m.to.kind==='found'?'to its foundation':'onto column '+(m.to.col+1)}.`};},
    auto:()=>{const m=klFindMove(s);if(!m||stall>400)return{v:'giveup'};return{v:m};}});
   if(r.v==='win')break;if(r.v==='giveup')break;if(r.v==='new'){klDeal(s);continue;}
   if(r.v==='auto'){let moved=true;while(moved){moved=false;const tops=[];if(s.waste.length)tops.push({from:'waste'});s.tab.forEach((t,col)=>{if(t.length)tops.push({from:'tab',col,idx:t.length-1});});for(const src of tops){if(klMove(s,src,{kind:'found'})){moved=true;T.render();await T.wait(150);break;}}}}
   else if(r.v&&r.v.draw)klDraw(s);else if(r.v&&r.v.src)klMove(s,r.v.src,r.v.to);
   const f=sum(s.found.map(x=>x.length));if(f>lastF){lastF=f;stall=0;}else stall++;
   if(f===52)break;}
- const done=sum(s.found.map(f=>f.length));await T.over(done===52?`<h3>You won!</h3>All 52 cards are home in ${s.moves} moves.`:`<h3>Game over</h3>You got ${done} of 52 cards to the foundations.`);}
+ const done=sum(s.found.map(f=>f.length));await T.over(done===52?`<h3>You won!</h3>All 52 cards are home in ${s.moves} moves.`:`<h3>No more moves</h3><p>You got <b>${done} of 52</b> cards to the foundations. There are no moves left in this deal.</p><p>Play again?</p>`);}
 /* ---- Pyramid ---- */
 function pyrDeal(s){const d=makeDeck();s.pyr=range(7).map(r=>d.splice(0,r+1));s.stock=d;s.waste=[];s.sel=null;s.passLeft=[Infinity,2,1][T.level];s.removed=0;s.recycled=false;s.dead=false;}
 const pyrVal=c=>c.r;
