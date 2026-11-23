@@ -147,6 +147,8 @@ body:has(#menu[hidden]) .strip,body:has(#play:not([hidden])) .strip,body:has(#ga
   <div id="styleWrap"><h2>Play style</h2><div class="row" id="styles"></div><div class="desc" id="sdesc"></div></div>
   <h2>Table talk</h2>
   <div class="row" id="talks"></div><div class="desc" id="tdesc"></div>
+  <h2>🎓 Learn-a-Game Night</h2>
+  <div class="row" id="learns"></div><div class="desc" id="learndesc"></div>
   <h2>4. Speed</h2>
   <div class="row" id="speeds"></div>
   <button class="btn gold start" id="startBtn">Deal me in →</button>
@@ -323,7 +325,8 @@ function renderInner(){const G=T.G,P=T.players,n=P.length;
  const bb=$('#ybtns');bb.innerHTML='';
  if(pd){(pd.buttons||[]).forEach((b,i)=>{const en=!b.ok||b.ok(T.sel);bb.append(h('button',{class:'yb'+(i===0&&pd.buttons.length<=3&&!pd.noMain?' main':''),onclick:()=>{if(en)T.resolve(b.v);},...(en?{}:{disabled:'disabled'}),html:b.label}));});
   if(pd.suggest)bb.append(h('button',{class:'yb hint',onclick:showHint},'💡 Hint'));
-  if(pd.suggest)bb.append(h('button',{class:'yb hint pfmb',onclick:playForMe},'🤖 Play for me'));}
+  if(pd.suggest)bb.append(h('button',{class:'yb hint pfmb',onclick:playForMe},'🤖 Play for me'));
+  if(T.learn&&pd.suggest&&T._coached!==pd){T._coached=pd;setTimeout(coachTurn,0);}}
 }
 function defaultSort(cs){return cs.sort((a,b)=>(SUITS.indexOf(a.s)-SUITS.indexOf(b.s))||(hv(a)-hv(b)));}
 function handTap(c){const pd=T.pending;if(!pd)return;const max=pd.max??1,i=T.sel.findIndex(x=>x.id===c.id);
@@ -353,12 +356,14 @@ function trickWhy(c,legal){const s=T.G&&T.G.state;if(!s||!s.trick)return '';if(l
  if(isTr(c))return 'You\'re out of the suit that was led, so you play a trump card to try to win the trick.';
  if(T.gid==='hearts'&&(c.s==='♥'||(c.s==='♠'&&c.r===12)))return 'You\'re out of the suit that was led, so it\'s a great time to hand a penalty card to someone else.';
  return 'You\'re out of the suit that was led, so you throw away a card you don\'t need.';}
+// Learn-a-Game Night: on every turn, light up the suggested card and say what to do and why.
+function coachTurn(){const pd=T.pending;if(!pd||!pd.suggest)return;let s;try{s=pd.suggest();}catch(e){return;}if(!s)return;T.sugg=new Set((s.cards||[]).map(c=>c.id));T.msg='🎓 Coach: '+(s.text||'Try the card that lights up.')+(s.why?' Why: '+s.why:'');T.render();}
 function showHint(){const pd=T.pending;if(!pd||!pd.suggest)return;const s=pd.suggest();T.sugg=new Set((s.cards||[]).map(c=>c.id));T.msg='💡 '+(s.text||'Try that.');T.render();}
 T.over=async(html)=>{T.active=-1;T.render();const v=await T.modal(html,[{label:'Play again',v:'again'},{label:'Choose another game',v:'menu'}]);if(v==='again')startGame(T.gid,T.n,T.level);else showMenu();};
 
 /* ---------- menu & start ---------- */
 const GAMES={};
-let MENU={gid:null,n:null,level:1,fast:false,style:'casual',talk:'straight'};
+let MENU={gid:null,n:null,level:1,fast:false,style:'casual',talk:'straight',learn:false};
 function showMenu(){T.token++;setPaused(false);if(T.pending)T.pending=null;$('#modal').style.display='none';$('#game').hidden=true;$('#menu').hidden=false;renderMenu();window.scrollTo(0,0);}
 function startGame(gid,n,level){T.started=false;T.token++;setPaused(false);T.dealer=-1;T.pending=null;T.bubbles={};T.msg='';T.sel=[];T.sugg=new Set();T.active=-1;T.gid=gid;T.n=n;T.level=level;
  const G=GAMES[gid];T.G=G;G.state={};
@@ -382,8 +387,9 @@ function renderMenu(){const g=$('#games');g.innerHTML='';
  $('#ldesc').textContent=LEVELS[MENU.level][1];
  const sw=$('#styleWrap');sw.hidden=!(G&&G.styles);if(G&&G.styles){const st=$('#styles');st.innerHTML='';[['casual','🏠 Casual play'],['casino','🎰 Casino play']].forEach(([k,lab])=>st.append(h('button',{class:'btn sm'+(MENU.style===k?' on':''),onclick:()=>{MENU.style=k;renderMenu();}},lab)));$('#sdesc').textContent=G.styles[MENU.style];}
  const tk=$('#talks');tk.innerHTML='';[['straight','💬 Straight'],['personality','😄 Personality']].forEach(([k,lab])=>tk.append(h('button',{class:'btn sm'+(MENU.talk===k?' on':''),onclick:()=>{MENU.talk=k;renderMenu();}},lab)));$('#tdesc').textContent=MENU.talk==='straight'?'Computer players keep it short: "Go fish." "Pass." "Hit."':'Computer players chat and tease: "Sorry Walt, you gotta fish!" "Too rich for me, I\'m out."';
+ const lr=$('#learns');lr.innerHTML='';[['Just play',false],['🎓 Coach me through it',true]].forEach(([lab,f])=>lr.append(h('button',{class:'btn sm'+(MENU.learn===f?' on':''),onclick:()=>{MENU.learn=f;renderMenu();}},lab)));$('#learndesc').textContent=MENU.learn?'Never played this one? Mr. Paul coaches every turn: the best card lights up with what to do and why. Computer players go easy (Beginner).':'Play normally. Hints and Play for me are always there if you need them.';
  const sp=$('#speeds');sp.innerHTML='';[['Relaxed',false],['Quick',true]].forEach(([lab,f])=>sp.append(h('button',{class:'btn sm'+(MENU.fast===f?' on':''),onclick:()=>{MENU.fast=f;renderMenu();}},lab)));}
-$('#startBtn').onclick=()=>{if(!MENU.gid){$('#gdesc').textContent='Pick a game first.';return;}T.fast=MENU.fast;T.style=MENU.style;T.chatty=MENU.talk==='personality';startGame(MENU.gid,MENU.n,MENU.level);};
+$('#startBtn').onclick=()=>{if(!MENU.gid){$('#gdesc').textContent='Pick a game first.';return;}T.fast=MENU.fast;T.style=MENU.style;T.chatty=MENU.talk==='personality';T.learn=MENU.learn;T._coached=null;startGame(MENU.gid,MENU.n,MENU.learn?0:MENU.level);};
 $('#leave').onclick=()=>{$('#mbody').innerHTML='<h3>Quit this game?</h3><p>You\'ll go back to the main screen, and this game won\'t be saved.</p>';const mb=$('#mbtns');mb.innerHTML='';
  mb.append(h('button',{class:'btn primary',onclick:()=>showMenu()},'Quit game'),h('button',{class:'btn',onclick:()=>{$('#modal').style.display='none';}},'Keep playing'));$('#modal').style.display='flex';};
 $('#rulesBtn').onclick=()=>{if(T.G)T.info(`<h3>How to play ${T.G.name}</h3>${T.G.rules}`);};
